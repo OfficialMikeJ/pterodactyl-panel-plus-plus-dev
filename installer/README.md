@@ -50,14 +50,33 @@ What it sets up:
 | cron | Laravel scheduler for `www-data` |
 | Panel | migrations (incl. trophy system), admin user, `APP_NAME` branding |
 
+## Build channels
+
+The installer asks which channel a server belongs to:
+
+| Channel | Branch | Who | Auto-update |
+| --- | --- | --- | --- |
+| `public` | `main` | Customers — the Alpha build with the version badge | Manual (run the update script) |
+| `dev` | `dev` | You — internal build with the Dev Lab tab | Nightly systemd timer (~04:30) |
+
+On the dev channel the installer also asks for `DEV_FEATURES_USERS` — the
+comma-separated emails allowed to see dev-only features. The public build
+never exposes dev features regardless of that list.
+
+The installed commit is stamped into `.env` as `TDH_BUILD` and shown on the
+panel's Dev-Blogs page under **Current Build**.
+
 ## Updating an existing install
 
 ```bash
 bash /var/www/touchdown/installer/update-touchdown-panel.sh
 ```
 
-Pulls the latest code, reinstalls dependencies, rebuilds assets, migrates the
-database and restarts the queue worker (with maintenance mode around it).
+Pulls the latest code from the server's branch, reinstalls dependencies,
+rebuilds assets, migrates the database, re-stamps the build hash and restarts
+the queue worker (with maintenance mode around it). Dev-channel servers run
+this automatically every night via the `touchdown-update.timer` systemd unit;
+check it with `systemctl status touchdown-update.timer`.
 
 ## Wings
 
