@@ -1,7 +1,15 @@
 import React, { lazy } from 'react';
 import { NavLink, Route, Switch } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCreditCard, faInfoCircle, faLayerGroup, faNewspaper, faTrophy } from '@fortawesome/free-solid-svg-icons';
+import {
+    faCreditCard,
+    faFlask,
+    faInfoCircle,
+    faLayerGroup,
+    faNewspaper,
+    faTrophy,
+} from '@fortawesome/free-solid-svg-icons';
+import { useStoreState } from 'easy-peasy';
 import styled from 'styled-components/macro';
 import tw from 'twin.macro';
 import NavigationBar from '@/components/NavigationBar';
@@ -17,6 +25,7 @@ const TrophiesContainer = lazy(() => import('@/components/touchdown/TrophiesCont
 const ServicesContainer = lazy(() => import('@/components/touchdown/ServicesContainer'));
 const DevBlogsContainer = lazy(() => import('@/components/touchdown/DevBlogsContainer'));
 const AboutContainer = lazy(() => import('@/components/touchdown/AboutContainer'));
+const DevLabContainer = lazy(() => import('@/components/touchdown/DevLabContainer'));
 
 // The dedicated "About Touch Down Hosting" tab — styled as a White/Orange pill
 // to stand apart from the regular navigation links.
@@ -37,6 +46,7 @@ const AboutPill = styled(NavLink)`
 
 export default () => {
     const location = useLocation();
+    const devFeatures = useStoreState((state) => state.settings.data?.touchdown?.devFeatures) || false;
 
     return (
         <>
@@ -63,6 +73,12 @@ export default () => {
                         <FontAwesomeIcon icon={faInfoCircle} css={tw`mr-2`} />
                         About Touch Down Hosting
                     </AboutPill>
+                    {devFeatures && (
+                        <NavLink to={'/dev-lab'}>
+                            <FontAwesomeIcon icon={faFlask} css={tw`mr-2`} />
+                            Dev Lab
+                        </NavLink>
+                    )}
                 </div>
             </SubNavigation>
             {location.pathname.startsWith('/account') && (
@@ -95,6 +111,9 @@ export default () => {
                         </Route>
                         <Route path={'/about'} exact>
                             <AboutContainer />
+                        </Route>
+                        <Route path={'/dev-lab'} exact>
+                            <DevLabContainer />
                         </Route>
                         {routes.account.map(({ path, component: Component }) => (
                             <Route key={path} path={`/account/${path}`.replace('//', '/')} exact>

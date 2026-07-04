@@ -29,6 +29,11 @@ Route::prefix('/billing')->group(function () {
     Route::put('/order', [Client\BillingController::class, 'updateOrder']);
 });
 
+// Dev Lab — internal build only; hidden (404) for everyone but whitelisted dev accounts.
+Route::prefix('/dev')->middleware(\Pterodactyl\Http\Middleware\DevFeaturesOnly::class)->group(function () {
+    Route::get('/build', [Client\DevController::class, 'build'])->name('api:client.dev.build');
+});
+
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
     Route::prefix('/')->withoutMiddleware(RequireTwoFactorAuthentication::class)->group(function () {
         Route::get('/', [Client\AccountController::class, 'index'])->name('api:client.account');
