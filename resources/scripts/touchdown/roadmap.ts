@@ -30,6 +30,12 @@ export const roadmap: RoadmapItem[] = [
         status: 'done',
     },
     {
+        title: 'One-command storage attach',
+        description:
+            'Attach extra disks, dedicated storage servers, or cloud volumes (Linode, Hetzner, OVH, DigitalOcean) by running a single SSH command.',
+        status: 'in-progress',
+    },
+    {
         title: 'More trophies (51+)',
         description: 'A new wave of trophies, including seasonal and event-based unlocks.',
         status: 'planned',
