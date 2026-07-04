@@ -116,8 +116,9 @@ prompt_config() {
   fi
 
   if [ "$CHANNEL" = "dev" ] && [ -z "$DEV_FEATURES_USERS" ]; then
-    read -rp "Emails allowed to see dev features [${ADMIN_EMAIL}]: " DEV_FEATURES_USERS
-    DEV_FEATURES_USERS="${DEV_FEATURES_USERS:-$ADMIN_EMAIL}"
+    default_dev_users="official.mikejtv@gmail.com,Kjaluellau@gmail.com"
+    read -rp "Emails allowed to see dev features [${default_dev_users}]: " DEV_FEATURES_USERS
+    DEV_FEATURES_USERS="${DEV_FEATURES_USERS:-$default_dev_users}"
   fi
 
   if [ -z "$GIT_REPO" ] || [ -z "$FQDN" ] || [ -z "$ADMIN_EMAIL" ] || [ -z "$ADMIN_PASSWORD" ]; then
