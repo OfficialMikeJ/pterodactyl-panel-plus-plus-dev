@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faCreditCard,
     faFlask,
+    faHdd,
     faInfoCircle,
     faLayerGroup,
     faNewspaper,
@@ -26,6 +27,7 @@ const ServicesContainer = lazy(() => import('@/components/touchdown/ServicesCont
 const DevBlogsContainer = lazy(() => import('@/components/touchdown/DevBlogsContainer'));
 const AboutContainer = lazy(() => import('@/components/touchdown/AboutContainer'));
 const DevLabContainer = lazy(() => import('@/components/touchdown/DevLabContainer'));
+const StorageContainer = lazy(() => import('@/components/touchdown/StorageContainer'));
 
 // The dedicated "About Touch Down Hosting" tab — styled as a White/Orange pill
 // to stand apart from the regular navigation links.
@@ -74,10 +76,16 @@ export default () => {
                         About Touch Down Hosting
                     </AboutPill>
                     {devFeatures && (
-                        <NavLink to={'/dev-lab'}>
-                            <FontAwesomeIcon icon={faFlask} css={tw`mr-2`} />
-                            Dev Lab
-                        </NavLink>
+                        <>
+                            <NavLink to={'/storage'}>
+                                <FontAwesomeIcon icon={faHdd} css={tw`mr-2`} />
+                                Storage
+                            </NavLink>
+                            <NavLink to={'/dev-lab'}>
+                                <FontAwesomeIcon icon={faFlask} css={tw`mr-2`} />
+                                Dev Lab
+                            </NavLink>
+                        </>
                     )}
                 </div>
             </SubNavigation>
@@ -114,6 +122,9 @@ export default () => {
                         </Route>
                         <Route path={'/dev-lab'} exact>
                             <DevLabContainer />
+                        </Route>
+                        <Route path={'/storage'} exact>
+                            <StorageContainer />
                         </Route>
                         {routes.account.map(({ path, component: Component }) => (
                             <Route key={path} path={`/account/${path}`.replace('//', '/')} exact>

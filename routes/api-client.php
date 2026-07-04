@@ -32,6 +32,12 @@ Route::prefix('/billing')->group(function () {
 // Dev Lab — internal build only; hidden (404) for everyone but whitelisted dev accounts.
 Route::prefix('/dev')->middleware(\Pterodactyl\Http\Middleware\DevFeaturesOnly::class)->group(function () {
     Route::get('/build', [Client\DevController::class, 'build'])->name('api:client.dev.build');
+
+    Route::prefix('/storage')->group(function () {
+        Route::get('/', [Client\StorageController::class, 'index'])->name('api:client.dev.storage');
+        Route::post('/', [Client\StorageController::class, 'store']);
+        Route::delete('/{id}', [Client\StorageController::class, 'delete'])->where('id', '[0-9]+');
+    });
 });
 
 Route::prefix('/account')->middleware(AccountSubject::class)->group(function () {
