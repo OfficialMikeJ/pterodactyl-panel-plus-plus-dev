@@ -32,7 +32,7 @@ export const roadmap: RoadmapItem[] = [
     {
         title: 'One-command storage attach',
         description:
-            'Attach extra disks, dedicated storage servers, or cloud volumes (Linode, Hetzner, OVH, DigitalOcean) by running a single SSH command.',
+            'Attach extra disks, cloud volumes (Linode, Hetzner, OVH, DigitalOcean), NAS systems (HexOS, TrueNAS, OpenMediaVault, CasaOS, Unraid) and Windows shares with a single command or a few clicks.',
         status: 'in-progress',
     },
     {
