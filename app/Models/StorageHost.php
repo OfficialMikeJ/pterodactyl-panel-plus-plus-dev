@@ -16,8 +16,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $status
  * @property string|null $mode
  * @property string|null $provider
+ * @property string|null $nas_os
  * @property string|null $hostname
  * @property string|null $ip
+ * @property string|null $share_path
+ * @property string|null $share_username
+ * @property string|null $share_password
  * @property int|null $total_bytes
  * @property int|null $free_bytes
  * @property array|null $volumes

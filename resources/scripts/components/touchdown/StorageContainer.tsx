@@ -21,7 +21,13 @@ import CopyOnClick from '@/components/elements/CopyOnClick';
 import Spinner from '@/components/elements/Spinner';
 import FlashMessageRender from '@/components/FlashMessageRender';
 import useFlash from '@/plugins/useFlash';
-import { createStorageHost, deleteStorageHost, getStorageHosts, StorageHost } from '@/api/devstorage';
+import {
+    createStorageHost,
+    createStorageShare,
+    deleteStorageHost,
+    getStorageHosts,
+    StorageHost,
+} from '@/api/devstorage';
 
 const providerMeta: Record<string, { label: string; color: string }> = {
     digitalocean: { label: 'DigitalOcean', color: '#0080ff' },
@@ -30,6 +36,26 @@ const providerMeta: Record<string, { label: string; color: string }> = {
     ovh: { label: 'OVHcloud', color: '#123f6d' },
     local: { label: 'Local / Self-hosted', color: 'var(--tdh-brand-400)' },
     unknown: { label: 'Unknown', color: 'var(--tdh-text-muted)' },
+};
+
+// NAS operating systems the attach agent can identify.
+const nasOsMeta: Record<string, { label: string; color: string }> = {
+    hexos: { label: 'HexOS', color: '#7c5cff' },
+    'truenas-core': { label: 'TrueNAS CORE', color: '#0095d5' },
+    'truenas-scale': { label: 'TrueNAS SCALE', color: '#71bf44' },
+    openmediavault: { label: 'OpenMediaVault', color: '#5dacdf' },
+    casaos: { label: 'CasaOS', color: '#48b2a0' },
+    unraid: { label: 'Unraid', color: '#f15a2c' },
+    'ubuntu-server': { label: 'Ubuntu Server', color: '#e95420' },
+    'windows-server': { label: 'Windows Server', color: '#0078d4' },
+    freebsd: { label: 'FreeBSD', color: '#ab2b28' },
+    debian: { label: 'Debian', color: '#a80030' },
+};
+
+const nasOsLabel = (nasOs: string | null): { label: string; color: string } | null => {
+    if (!nasOs) return null;
+
+    return nasOsMeta[nasOs] || { label: nasOs, color: 'var(--tdh-text-muted)' };
 };
 
 const Card = styled.div`
@@ -109,6 +135,11 @@ const StorageContainer = () => {
     const [name, setName] = useState('');
     const [command, setCommand] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
+    const [shareName, setShareName] = useState('');
+    const [sharePath, setSharePath] = useState('');
+    const [shareUsername, setShareUsername] = useState('');
+    const [sharePassword, setSharePassword] = useState('');
+    const [creatingShare, setCreatingShare] = useState(false);
     const pollRef = useRef<number>();
 
     const refresh = () => getStorageHosts().then(setHosts).catch(console.error);
@@ -155,6 +186,30 @@ const StorageContainer = () => {
             .catch((error) => clearAndAddHttpError({ key: 'storage', error }));
     };
 
+    const onCreateShare = () => {
+        if (!shareName.trim() || !sharePath.trim()) return;
+
+        setCreatingShare(true);
+        clearFlashes('storage');
+
+        createStorageShare({
+            name: shareName.trim(),
+            sharePath: sharePath.trim(),
+            shareUsername: shareUsername.trim(),
+            sharePassword,
+        })
+            .then(() => {
+                setShareName('');
+                setSharePath('');
+                setShareUsername('');
+                setSharePassword('');
+                refresh();
+                addFlash({ key: 'storage', type: 'success', message: 'Windows share attached.' });
+            })
+            .catch((error) => clearAndAddHttpError({ key: 'storage', error }))
+            .finally(() => setCreatingShare(false));
+    };
+
     return (
         <PageContentBlock title={'Storage'}>
             <FlashMessageRender byKey={'storage'} css={tw`mb-4`} />
@@ -182,9 +237,11 @@ const StorageContainer = () => {
                 </h2>
                 <p css={tw`text-xs mb-4`} style={{ color: 'var(--tdh-text-muted)' }}>
                     Name the storage, generate the command, then run it as root on the machine holding the storage. The
-                    agent auto-detects unmounted disks and cloud volumes — or registers the whole machine as a storage
-                    server if it finds none. Detection is report-only; add <code>--mount</code> or <code>--format</code>{' '}
-                    to also mount.
+                    agent auto-detects unmounted disks, cloud volumes, and the NAS OS it is running on — HexOS, TrueNAS
+                    CORE &amp; SCALE, OpenMediaVault, CasaOS, Unraid and Ubuntu Server are all supported. Detection is
+                    report-only; add <code>--mount</code> or <code>--format</code> to also mount. On NAS systems the
+                    agent never touches disks — it registers the NAS and its capacity. For Windows Server, attach a
+                    network share below instead.
                 </p>
                 <div css={tw`flex items-end flex-wrap`}>
                     <div css={tw`flex-1 mr-4`} style={{ minWidth: '16rem' }}>
@@ -215,6 +272,63 @@ const StorageContainer = () => {
                 )}
             </Card>
 
+            <Card css={tw`mt-6`}>
+                <h2 css={tw`text-lg font-semibold mb-1`} style={{ color: 'var(--tdh-text)' }}>
+                    <FontAwesomeIcon icon={faNetworkWired} css={tw`mr-2`} style={{ color: 'var(--tdh-brand-500)' }} />
+                    Attach a Windows Share (SMB)
+                </h2>
+                <p css={tw`text-xs mb-4`} style={{ color: 'var(--tdh-text-muted)' }}>
+                    Windows and Windows Server (2022+) storage does not need an agent — share the folder or drive in
+                    Windows, then register the share here. Credentials are optional and the password is stored
+                    encrypted.
+                </p>
+                <div css={tw`grid gap-4 grid-cols-1 md:grid-cols-2`}>
+                    <div>
+                        <Label>Storage Name</Label>
+                        <Input
+                            value={shareName}
+                            placeholder={'e.g. Windows Storage 01'}
+                            onChange={(e) => setShareName(e.currentTarget.value)}
+                        />
+                    </div>
+                    <div>
+                        <Label>Share Path (UNC)</Label>
+                        <Input
+                            value={sharePath}
+                            placeholder={'\\\\192.168.1.50\\GameStorage'}
+                            onChange={(e) => setSharePath(e.currentTarget.value)}
+                        />
+                    </div>
+                    <div>
+                        <Label>Username (optional)</Label>
+                        <Input
+                            value={shareUsername}
+                            placeholder={'DOMAIN\\user or local user'}
+                            onChange={(e) => setShareUsername(e.currentTarget.value)}
+                        />
+                    </div>
+                    <div>
+                        <Label>Password (optional)</Label>
+                        <Input
+                            type={'password'}
+                            value={sharePassword}
+                            placeholder={'Share password'}
+                            onChange={(e) => setSharePassword(e.currentTarget.value)}
+                        />
+                    </div>
+                </div>
+                <div css={tw`flex justify-end mt-4`}>
+                    <Button
+                        color={'white'}
+                        isLoading={creatingShare}
+                        disabled={creatingShare || !shareName.trim() || !sharePath.trim()}
+                        onClick={onCreateShare}
+                    >
+                        Attach Windows Share
+                    </Button>
+                </div>
+            </Card>
+
             <div css={tw`mt-8`}>
                 <h2 css={tw`text-xl font-semibold mb-4`}>Attached Storage</h2>
                 {!hosts ? (
@@ -229,13 +343,20 @@ const StorageContainer = () => {
                     <div css={tw`grid gap-4 grid-cols-1 lg:grid-cols-2`}>
                         {hosts.map((host) => {
                             const provider = providerMeta[host.provider || 'unknown'] || providerMeta.unknown;
+                            const nasOs = nasOsLabel(host.nasOs);
 
                             return (
                                 <Card key={host.id}>
                                     <div css={tw`flex items-center justify-between flex-wrap`}>
                                         <h3 css={tw`text-lg font-semibold`} style={{ color: 'var(--tdh-text)' }}>
                                             <FontAwesomeIcon
-                                                icon={host.mode === 'storage-server' ? faServer : faHdd}
+                                                icon={
+                                                    host.mode === 'smb-share'
+                                                        ? faNetworkWired
+                                                        : host.mode === 'storage-server'
+                                                        ? faServer
+                                                        : faHdd
+                                                }
                                                 css={tw`mr-2`}
                                                 style={{ color: 'var(--tdh-brand-500)' }}
                                             />
@@ -254,17 +375,28 @@ const StorageContainer = () => {
                                                     {provider.label}
                                                 </ProviderChip>
                                             )}
+                                            {host.status === 'attached' && nasOs && (
+                                                <ProviderChip $color={nasOs.color}>
+                                                    <FontAwesomeIcon icon={faServer} css={tw`mr-1`} />
+                                                    {nasOs.label}
+                                                </ProviderChip>
+                                            )}
                                         </div>
                                     </div>
                                     {host.status === 'attached' && (
                                         <div css={tw`mt-3`}>
                                             <p css={tw`text-xs`} style={{ color: 'var(--tdh-text-muted)' }}>
-                                                {host.hostname || 'unknown host'} ({host.ip || 'no ip'}) &mdash;{' '}
-                                                {host.mode === 'storage-server'
-                                                    ? `dedicated storage server, ${formatBytes(
-                                                          host.freeBytes
-                                                      )} free of ${formatBytes(host.totalBytes)}`
-                                                    : `${host.volumes.length} volume(s) detected`}
+                                                {host.mode === 'smb-share'
+                                                    ? `${host.sharePath}${
+                                                          host.shareUsername ? ` (as ${host.shareUsername})` : ''
+                                                      } — Windows network share`
+                                                    : `${host.hostname || 'unknown host'} (${host.ip || 'no ip'}) — ${
+                                                          host.mode === 'storage-server'
+                                                              ? `dedicated storage server, ${formatBytes(
+                                                                    host.freeBytes
+                                                                )} free of ${formatBytes(host.totalBytes)}`
+                                                              : `${host.volumes.length} volume(s) detected`
+                                                      }`}
                                             </p>
                                             {host.volumes.map((volume) => (
                                                 <VolumeRow key={volume.device}>

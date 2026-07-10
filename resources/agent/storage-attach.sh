@@ -2,9 +2,9 @@
 set -euo pipefail
 
 #############################################################################
-#  Touch Down Hosting — Storage Attach Agent                                #
+#  Touch Down Hosting — Storage Attach Agent (Linux / BSD / NAS)            #
 #                                                                           #
-#  Run on any Linux machine to register its storage with your panel:       #
+#  Run on any machine to register its storage with your panel:              #
 #                                                                           #
 #    curl -sSL __PANEL_URL__/storage/attach.sh | sudo bash -s -- \          #
 #      --token=YOUR_ATTACH_TOKEN                                            #
@@ -12,14 +12,23 @@ set -euo pipefail
 #  Auto-detects:                                                            #
 #   - extra local disks / partitions that are not mounted                   #
 #   - cloud block-storage volumes (Linode, Hetzner, OVH, DigitalOcean)      #
+#   - the NAS operating system it is running on:                            #
+#       HexOS, TrueNAS SCALE, TrueNAS CORE (FreeBSD), OpenMediaVault,       #
+#       CasaOS, Unraid, Ubuntu Server (and other Linux distros)             #
 #   - or, when no spare devices exist, registers the whole machine as a     #
 #     dedicated storage server with its free capacity                       #
+#                                                                           #
+#  Windows Server storage does not use this agent - register the machine's #
+#  SMB share directly on the panel's Storage page instead.                  #
 #                                                                           #
 #  Safe by default: DETECTS AND REPORTS ONLY. Nothing is written to disk    #
 #  unless you opt in:                                                       #
 #    --mount    mount detected, already-formatted volumes                   #
 #    --format   format UNFORMATTED volumes as ext4, then mount them         #
 #    --mode=server   skip device detection, register as storage server      #
+#                                                                           #
+#  On NAS systems (TrueNAS, Unraid, OMV, ...) the agent never formats or    #
+#  mounts — the NAS manages its own pools; it registers capacity instead.  #
 #############################################################################
 
 PANEL_URL="__PANEL_URL__"
@@ -46,9 +55,62 @@ done
 [ -n "$TOKEN" ] || fail "Missing --token=... (generate one on the panel's Storage page)"
 [ "$(id -u)" -eq 0 ] || fail "Run as root (sudo)."
 command -v curl >/dev/null || fail "curl is required."
-command -v lsblk >/dev/null || fail "lsblk is required."
 
-# ── Host provider detection (DMI vendor strings) ───────────────────────────
+KERNEL="$(uname -s 2>/dev/null || echo unknown)"
+
+# ── NAS operating system detection ─────────────────────────────────────────
+detect_nas_os() {
+  if [ "$KERNEL" = "FreeBSD" ]; then
+    if [ -f /etc/version ] && grep -qi 'truenas\|freenas' /etc/version 2>/dev/null; then
+      echo "truenas-core"
+    else
+      echo "freebsd"
+    fi
+    return
+  fi
+
+  # Unraid ships a version marker in /etc.
+  if [ -f /etc/unraid-version ]; then
+    echo "unraid"
+    return
+  fi
+
+  # TrueNAS SCALE (and HexOS, which is built on top of SCALE) ship midclt.
+  if command -v midclt >/dev/null 2>&1 && [ -f /etc/version ]; then
+    if grep -qi hexos /etc/version 2>/dev/null || [ -f /etc/hexos-release ] || [ -d /usr/local/hexos ]; then
+      echo "hexos"
+    else
+      echo "truenas-scale"
+    fi
+    return
+  fi
+
+  if [ -f /etc/default/openmediavault ]; then
+    echo "openmediavault"
+    return
+  fi
+
+  if [ -x /usr/bin/casaos ] || [ -d /etc/casaos ] || [ -f /usr/lib/systemd/system/casaos.service ] \
+    || [ -f /etc/systemd/system/casaos.service ]; then
+    echo "casaos"
+    return
+  fi
+
+  if [ -r /etc/os-release ]; then
+    local os_id
+    os_id="$(. /etc/os-release && echo "${ID:-linux}")"
+    if [ "$os_id" = "ubuntu" ]; then
+      echo "ubuntu-server"
+    else
+      echo "$os_id"
+    fi
+    return
+  fi
+
+  echo "linux"
+}
+
+# ── Host provider detection (DMI vendor strings; Linux only) ───────────────
 detect_host_provider() {
   local vendor=""
   [ -r /sys/class/dmi/id/sys_vendor ] && vendor="$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)"
@@ -78,24 +140,41 @@ device_provider() {
   detect_host_provider
 }
 
-# ── Find the disk that holds / so we never touch it ────────────────────────
-root_disk="$(lsblk -nro NAME,MOUNTPOINT | awk '$2=="/" {print $1}' | head -1 || true)"
-root_parent=""
-[ -n "$root_disk" ] && root_parent="$(lsblk -nro PKNAME "/dev/${root_disk}" 2>/dev/null | head -1 || true)"
-
+NAS_OS="$(detect_nas_os)"
 HOST_PROVIDER="$(detect_host_provider)"
 HOSTNAME_STR="$(hostname)"
-IP_STR="$(hostname -I 2>/dev/null | awk '{print $1}' || echo '')"
+IP_STR="$(hostname -I 2>/dev/null | awk '{print $1}' || true)"
+[ -z "$IP_STR" ] && IP_STR="$(ifconfig 2>/dev/null | awk '/inet / && $2 != "127.0.0.1" {print $2; exit}' || true)"
 
 log "Panel:    ${PANEL_URL}"
 log "Host:     ${HOSTNAME_STR} (${IP_STR:-no ip})"
+log "System:   ${NAS_OS} (${KERNEL})"
 log "Provider: ${HOST_PROVIDER}"
+
+# NAS platforms manage their own disks/pools — never touch them, register
+# capacity instead. Plain Linux distros keep full device handling.
+case "$NAS_OS" in
+  truenas-core|truenas-scale|hexos|unraid|openmediavault|casaos)
+    if [ "$DO_MOUNT" = "yes" ] || [ "$DO_FORMAT" = "yes" ]; then
+      log "Detected a NAS OS (${NAS_OS}) — ignoring --mount/--format; the NAS manages its own storage."
+      DO_MOUNT="no"; DO_FORMAT="no"
+    fi
+    MODE="server"
+    ;;
+esac
+
+[ "$KERNEL" = "FreeBSD" ] && MODE="server"
 
 volumes_json=""
 count=0
 
 if [ "$MODE" != "server" ]; then
+  command -v lsblk >/dev/null || fail "lsblk is required for device detection (or re-run with --mode=server)."
   log "Scanning for unmounted disks and cloud volumes..."
+
+  root_disk="$(lsblk -nro NAME,MOUNTPOINT | awk '$2=="/" {print $1}' | head -1 || true)"
+  root_parent=""
+  [ -n "$root_disk" ] && root_parent="$(lsblk -nro PKNAME "/dev/${root_disk}" 2>/dev/null | head -1 || true)"
 
   while read -r name type size; do
     [ "$type" = "disk" ] || continue
@@ -107,11 +186,13 @@ if [ "$MODE" != "server" ]; then
       continue
     fi
 
-    fstype="$(blkid -o value -s TYPE "/dev/$name" 2>/dev/null || true)"
+    fstype=""
+    command -v blkid >/dev/null 2>&1 && fstype="$(blkid -o value -s TYPE "/dev/$name" 2>/dev/null || true)"
     provider="$(device_provider "$name")"
     mountpoint=""
 
     if [ -z "$fstype" ] && [ "$DO_FORMAT" = "yes" ]; then
+      command -v mkfs.ext4 >/dev/null || fail "mkfs.ext4 not available on this system."
       log "Formatting /dev/$name as ext4..."
       mkfs.ext4 -F -q "/dev/$name"
       fstype="ext4"
@@ -139,15 +220,16 @@ fi
 
 if [ $count -eq 0 ]; then
   MODE_STR="storage-server"
-  log "No spare devices found — registering this machine as a dedicated storage server."
-  read -r total_bytes free_bytes < <(df -B1 --output=size,avail / | tail -1)
+  log "Registering this machine as a dedicated storage server (${NAS_OS})."
+  # Portable across GNU coreutils and BSD: df -k reports 1K blocks.
+  read -r total_bytes free_bytes < <(df -k / | tail -1 | awk '{print $2 * 1024, $4 * 1024}')
 else
   MODE_STR="local-device"
   total_bytes=0
   free_bytes=0
 fi
 
-payload="{\"token\":\"$TOKEN\",\"hostname\":\"$HOSTNAME_STR\",\"ip\":\"$IP_STR\",\"provider\":\"$HOST_PROVIDER\",\"mode\":\"$MODE_STR\",\"total_bytes\":${total_bytes:-0},\"free_bytes\":${free_bytes:-0},\"volumes\":[${volumes_json}]}"
+payload="{\"token\":\"$TOKEN\",\"hostname\":\"$HOSTNAME_STR\",\"ip\":\"$IP_STR\",\"provider\":\"$HOST_PROVIDER\",\"nas_os\":\"$NAS_OS\",\"mode\":\"$MODE_STR\",\"total_bytes\":${total_bytes:-0},\"free_bytes\":${free_bytes:-0},\"volumes\":[${volumes_json}]}"
 
 log "Reporting to panel..."
 response="$(curl -sS -X POST "$PANEL_URL/api/storage/ingest" \

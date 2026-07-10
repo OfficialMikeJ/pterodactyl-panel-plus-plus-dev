@@ -36,6 +36,7 @@ Route::prefix('/dev')->middleware(\Pterodactyl\Http\Middleware\DevFeaturesOnly::
     Route::prefix('/storage')->group(function () {
         Route::get('/', [Client\StorageController::class, 'index'])->name('api:client.dev.storage');
         Route::post('/', [Client\StorageController::class, 'store']);
+        Route::post('/share', [Client\StorageController::class, 'storeShare']);
         Route::delete('/{id}', [Client\StorageController::class, 'delete'])->where('id', '[0-9]+');
     });
 });
