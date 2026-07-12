@@ -87,6 +87,37 @@ detect_os() {
   success "Detected $PRETTY_NAME"
 }
 
+# Password policy for the master admin account: 12-64 characters with at
+# least one lowercase letter, one uppercase letter, one number and one
+# special character. Matches the panel's reset-master-password script.
+validate_password() {
+  local p="$1" len=${#1}
+  if [ "$len" -lt 12 ] || [ "$len" -gt 64 ]; then
+    echo "Password must be between 12 and 64 characters."; return 1
+  fi
+  [[ "$p" =~ [a-z] ]] || { echo "Password must contain at least one lowercase letter."; return 1; }
+  [[ "$p" =~ [A-Z] ]] || { echo "Password must contain at least one uppercase letter."; return 1; }
+  [[ "$p" =~ [0-9] ]] || { echo "Password must contain at least one number."; return 1; }
+  [[ "$p" =~ [^a-zA-Z0-9] ]] || { echo "Password must contain at least one special character (e.g. !@#\$%)."; return 1; }
+  return 0
+}
+
+prompt_admin_password() {
+  local problem confirm_pw
+  echo "Admin password requirements: 12-64 chars, with lowercase, uppercase, a number and a special character."
+  while :; do
+    read -rsp "Admin account password: " ADMIN_PASSWORD; echo
+    if ! problem="$(validate_password "$ADMIN_PASSWORD")"; then
+      error "$problem"; continue
+    fi
+    read -rsp "Confirm admin password: " confirm_pw; echo
+    if [ "$ADMIN_PASSWORD" != "$confirm_pw" ]; then
+      error "Passwords do not match, please try again."; continue
+    fi
+    break
+  done
+}
+
 prompt_config() {
   [ -z "$GIT_REPO" ] && read -rp "Git repository URL of your panel (Gitea): " GIT_REPO
 
@@ -112,7 +143,13 @@ prompt_config() {
   [ -z "$FQDN" ] && read -rp "Panel domain / FQDN (e.g. panel.example.com): " FQDN
   [ -z "$ADMIN_EMAIL" ] && read -rp "Admin account email: " ADMIN_EMAIL
   if [ -z "$ADMIN_PASSWORD" ]; then
-    read -rsp "Admin account password: " ADMIN_PASSWORD; echo
+    prompt_admin_password
+  else
+    # Password supplied via environment — still has to meet the policy.
+    if ! problem="$(validate_password "$ADMIN_PASSWORD")"; then
+      error "ADMIN_PASSWORD does not meet the password policy: $problem"
+      exit 1
+    fi
   fi
 
   if [ "$CHANNEL" = "dev" ] && [ -z "$DEV_FEATURES_USERS" ]; then

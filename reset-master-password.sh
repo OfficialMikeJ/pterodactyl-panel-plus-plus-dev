@@ -13,6 +13,10 @@ set -euo pipefail
 #  You will be prompted for the new password twice; if they match the       #
 #  password is changed immediately. Safe to run as many times as needed.    #
 #  This does NOT affect regular user accounts.                              #
+#                                                                           #
+#  Password requirements: 12-64 characters, with at least one lowercase     #
+#  letter, one uppercase letter, one number and one special character.      #
+#  The new password cannot be the same as the current password.             #
 #############################################################################
 
 cd "$(dirname "$0")"
