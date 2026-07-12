@@ -9,6 +9,7 @@ import { breakpoint } from '@/theme';
 import styled from 'styled-components/macro';
 import MessageBox from '@/components/MessageBox';
 import { useLocation } from 'react-router-dom';
+import DiscordButton from '@/components/touchdown/DiscordButton';
 
 const Container = styled.div`
     ${tw`flex flex-wrap`};
@@ -48,6 +49,13 @@ export default () => {
                     <ConfigureTwoFactorForm />
                 </ContentBox>
             </Container>
+            <ContentBox title={'Community & Support'} css={tw`mb-10`}>
+                <p css={tw`text-sm text-center mb-4`} style={{ color: 'var(--tdh-text-muted)' }}>
+                    Need help with your account or servers? Join the Touch Down Hosting Discord — our team and community
+                    are happy to help.
+                </p>
+                <DiscordButton />
+            </ContentBox>
         </PageContentBlock>
     );
 };

@@ -5,6 +5,7 @@ import { breakpoint } from '@/theme';
 import FlashMessageRender from '@/components/FlashMessageRender';
 import tw from 'twin.macro';
 import BrandLogo from '@/components/touchdown/BrandLogo';
+import DiscordButton from '@/components/touchdown/DiscordButton';
 
 type Props = React.DetailedHTMLProps<React.FormHTMLAttributes<HTMLFormElement>, HTMLFormElement> & {
     title?: string;
@@ -56,6 +57,10 @@ export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => 
                 <div css={tw`flex-1`}>{props.children}</div>
             </GlassCard>
         </Form>
+        <p css={tw`text-center text-xs mt-6`} style={{ color: 'var(--tdh-text-muted)' }}>
+            Having trouble logging in? Join our Discord and we&apos;ll help you out.
+        </p>
+        <DiscordButton css={tw`mt-3`} />
         <p css={tw`text-center text-xs mt-4`} style={{ color: 'var(--tdh-text-muted)' }}>
             &copy; {new Date().getFullYear()} <span style={{ color: 'var(--tdh-brand-400)' }}>Touch Down Hosting</span>
             &nbsp;&mdash; All rights reserved.
