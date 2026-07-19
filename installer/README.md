@@ -81,6 +81,30 @@ server into a nightly automatic update, install with `AUTO_UPDATE=yes` — that
 creates a `touchdown-update.timer` systemd unit (check it with
 `systemctl status touchdown-update.timer`).
 
+## Repairing a broken or half-finished install
+
+```bash
+sudo bash installer/repair-touchdown-panel.sh            # check + auto-fix
+sudo bash installer/repair-touchdown-panel.sh --check    # report only, change nothing
+sudo PANEL_DIR=/path/to/panel bash installer/repair-touchdown-panel.sh
+```
+
+Finds the panel automatically and checks every subsystem, fixing what it can:
+
+| Area | Checks / fixes |
+| --- | --- |
+| `.env` | Present, `APP_KEY` generated (works even when Laravel cannot boot), `APP_URL` sane (no `https` on a bare IP), mode 600 |
+| Filesystem | Laravel runtime directories, `www-data` ownership, storage permissions |
+| Dependencies | `vendor/` (composer), built frontend assets (yarn) |
+| Services | mariadb, redis, nginx, PHP-FPM running |
+| Database | Connection works, pending migrations applied |
+| Web server | Panel site exists + enabled, **nginx's default site removed** (the classic "Welcome to nginx!" page), config valid, reload |
+| Workers | `pteroq` queue worker, scheduler cron entry |
+| Result | Final HTTP check plus the address the panel is reachable on |
+
+It never deletes data and never touches database contents, so it is safe to
+run repeatedly.
+
 ## Wings
 
 Wings is **unmodified** in this fork — install it on your game nodes with the
