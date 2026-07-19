@@ -11,8 +11,11 @@ use Pterodactyl\Http\Controllers\Controller;
 
 /**
  * Public endpoints backing the Touch Down Hosting one-command storage attach
- * agent (dev build feature). The script itself is not secret — the one-time
- * attach token passed to it is what authenticates the ingest call.
+ * agent (dev build feature). The script itself is not secret — the attach
+ * token passed to it is what authenticates ingest calls. The token stays
+ * valid after the first attach on purpose: re-running the agent (e.g. with
+ * --mount after a report-only pass) posts an updated report with the same
+ * token. It is displayed to the panel user only once and stored hashed.
  */
 class StorageAgentController extends Controller
 {
