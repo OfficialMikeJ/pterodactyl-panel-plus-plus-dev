@@ -27,7 +27,7 @@ set -euo pipefail
 GIT_REPO="${GIT_REPO:-}"                      # e.g. https://gitea.example.com/YourUser/touch-down-hosting-panel.git
 CHANNEL="${CHANNEL:-}"                        # public (main branch, Alpha) | dev (dev branch, internal build)
 GIT_BRANCH="${GIT_BRANCH:-}"                  # derived from CHANNEL unless set explicitly
-AUTO_UPDATE="${AUTO_UPDATE:-}"                # yes/no — defaults: dev=yes, public=no
+AUTO_UPDATE="${AUTO_UPDATE:-}"                # yes/no — default: no (opt-in; both builds update manually)
 DEV_FEATURES_USERS="${DEV_FEATURES_USERS:-}"  # comma-separated emails (dev channel only)
 PANEL_DIR="${PANEL_DIR:-/var/www/touchdown}"
 FQDN="${FQDN:-}"                              # e.g. panel.touchdownhosting.com
@@ -123,8 +123,8 @@ prompt_config() {
 
   if [ -z "$CHANNEL" ]; then
     echo "Which build channel is this server?"
-    echo "  1) public — customer-facing Alpha build (main branch, manual updates)"
-    echo "  2) dev    — internal dev build (dev branch, nightly auto-update)"
+    echo "  1) public — customer-facing Alpha build (main branch)"
+    echo "  2) dev    — internal dev build (dev branch)"
     read -rp "Channel [1]: " channel_choice
     case "${channel_choice:-1}" in
       2) CHANNEL="dev" ;;
@@ -138,7 +138,9 @@ prompt_config() {
   fi
 
   [ -z "$GIT_BRANCH" ] && { [ "$CHANNEL" = "dev" ] && GIT_BRANCH="dev" || GIT_BRANCH="main"; }
-  [ -z "$AUTO_UPDATE" ] && { [ "$CHANNEL" = "dev" ] && AUTO_UPDATE="yes" || AUTO_UPDATE="no"; }
+  # Scheduled auto-update is opt-in only (AUTO_UPDATE=yes); both builds update
+  # manually by default via installer/update-touchdown-panel.sh.
+  [ -z "$AUTO_UPDATE" ] && AUTO_UPDATE="no"
 
   [ -z "$FQDN" ] && read -rp "Panel domain / FQDN (e.g. panel.example.com): " FQDN
   [ -z "$ADMIN_EMAIL" ] && read -rp "Admin account email: " ADMIN_EMAIL

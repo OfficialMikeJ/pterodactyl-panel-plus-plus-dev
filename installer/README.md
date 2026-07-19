@@ -54,10 +54,10 @@ What it sets up:
 
 The installer asks which channel a server belongs to:
 
-| Channel | Branch | Who | Auto-update |
+| Channel | Branch | Who | Updates |
 | --- | --- | --- | --- |
 | `public` | `main` | Customers — the Alpha build with the version badge | Manual (run the update script) |
-| `dev` | `dev` | You — internal build with the Dev Lab tab | Nightly systemd timer (~04:30) |
+| `dev` | `dev` | You — internal build with the Dev Lab tab | Manual (run the update script) |
 
 On the dev channel the installer also asks for `DEV_FEATURES_USERS` — the
 comma-separated emails allowed to see dev-only features. The public build
@@ -74,9 +74,12 @@ bash /var/www/touchdown/installer/update-touchdown-panel.sh
 
 Pulls the latest code from the server's branch, reinstalls dependencies,
 rebuilds assets, migrates the database, re-stamps the build hash and restarts
-the queue worker (with maintenance mode around it). Dev-channel servers run
-this automatically every night via the `touchdown-update.timer` systemd unit;
-check it with `systemctl status touchdown-update.timer`.
+the queue worker (with maintenance mode around it).
+
+Scheduled auto-update is **disabled by default** for both channels. To opt a
+server into a nightly automatic update, install with `AUTO_UPDATE=yes` — that
+creates a `touchdown-update.timer` systemd unit (check it with
+`systemctl status touchdown-update.timer`).
 
 ## Wings
 

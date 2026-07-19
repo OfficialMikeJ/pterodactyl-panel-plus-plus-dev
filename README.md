@@ -28,10 +28,10 @@ Everything Pterodactyl does, plus the Touch Down Hosting experience:
 
 ## Build channels
 
-| Channel | Branch | Purpose | Auto-update |
+| Channel | Branch | Purpose | Updates |
 | --- | --- | --- | --- |
 | `public` | `main` | Customer-facing **Alpha** build | Manual |
-| `dev` | `dev` | Internal build with dev-only features (Dev Lab, Storage) | Nightly systemd timer |
+| `dev` | `dev` | Internal build with dev-only features (Dev Lab, Storage) | Manual (auto-update available via opt-in) |
 
 The version badge in the panel's navigation bar shows the active channel and build; clicking it opens the Dev-Blogs page.
 
