@@ -97,7 +97,9 @@ export default ({ server, className }: { server: Server; className?: string }) =
                 <div>
                     <p css={tw`text-lg break-words`}>{server.name}</p>
                     {!!server.description && (
-                        <p css={tw`text-sm text-neutral-300 break-words line-clamp-2`}>{server.description}</p>
+                        <p css={tw`text-sm text-neutral-300 break-words`} className={'line-clamp-2'}>
+                            {server.description}
+                        </p>
                     )}
                 </div>
             </div>

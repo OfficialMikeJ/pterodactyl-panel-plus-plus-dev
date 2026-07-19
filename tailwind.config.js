@@ -61,7 +61,7 @@ module.exports = {
         },
     },
     plugins: [
-        require('@tailwindcss/line-clamp'),
+        // line-clamp is built into Tailwind CSS 3.3+ — no plugin needed.
         require('@tailwindcss/forms')({
             strategy: 'class',
         }),
