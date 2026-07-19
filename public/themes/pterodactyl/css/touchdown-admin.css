@@ -1,0 +1,381 @@
+/*
+ * Touch Down Hosting — admin area reskin.
+ *
+ * Override layer loaded AFTER AdminLTE's skin-blue and pterodactyl.css,
+ * restyling the /admin area to match the client panel: black glass surfaces
+ * with orange accents and white text. The palette mirrors the client theme
+ * defaults in resources/scripts/assets/css/GlobalStylesheet.ts (Cool Orange).
+ */
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+body,
+.wrapper,
+.content-wrapper {
+    background: #0c0d0f !important;
+    background-image: radial-gradient(1200px 800px at 85% -10%, rgba(255, 122, 0, 0.14), transparent 60%),
+        radial-gradient(1000px 700px at -10% 110%, rgba(255, 122, 0, 0.09), transparent 55%),
+        linear-gradient(160deg, #0a0b0d 0%, #101214 55%, #0d0b08 100%) !important;
+    background-attachment: fixed !important;
+    color: #f5f7fa;
+}
+
+.content-header > h1,
+.content-header > h1 > small {
+    color: #f5f7fa;
+}
+
+a {
+    color: #ff9633;
+}
+
+a:hover,
+a:focus {
+    color: #ffb266;
+}
+
+/* ── Header / top navbar ──────────────────────────────────────────────── */
+.skin-blue .main-header .navbar,
+.skin-blue .main-header .logo {
+    background: rgba(13, 15, 18, 0.95) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.skin-blue .main-header .logo {
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.skin-blue .main-header .logo:hover {
+    background: rgba(255, 122, 0, 0.12) !important;
+}
+
+.skin-blue .main-header .navbar .sidebar-toggle:hover,
+.skin-blue .main-header .navbar .nav > li > a:hover {
+    background: rgba(255, 122, 0, 0.15) !important;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────── */
+.skin-blue .main-sidebar,
+.skin-blue .left-side {
+    background: rgba(13, 15, 18, 0.97) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.skin-blue .sidebar-menu > li.header {
+    background: transparent !important;
+    color: #9aa3ad !important;
+}
+
+.skin-blue .sidebar-menu > li > a {
+    color: #b9c2cc;
+    border-left: 3px solid transparent;
+}
+
+.skin-blue .sidebar-menu > li:hover > a,
+.skin-blue .sidebar-menu > li.active > a {
+    background: rgba(255, 122, 0, 0.12) !important;
+    color: #ffffff !important;
+    border-left-color: #ff7a00 !important;
+}
+
+.skin-blue .sidebar form input[type='text'] {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #f5f7fa;
+}
+
+.skin-blue .sidebar form .btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #9aa3ad;
+}
+
+/* ── Content boxes ────────────────────────────────────────────────────── */
+.box {
+    background: rgba(18, 20, 24, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-top: 3px solid #ff7a00;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    color: #f5f7fa;
+}
+
+.box.box-primary {
+    border-top-color: #ff7a00;
+}
+
+.box.box-success {
+    border-top-color: #22c55e;
+}
+
+.box.box-danger {
+    border-top-color: #ef4444;
+}
+
+.box.box-warning {
+    border-top-color: #ffb266;
+}
+
+.box.box-info {
+    border-top-color: #ff9633;
+}
+
+.box-header {
+    color: #f5f7fa;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.box-header .box-title {
+    color: #f5f7fa;
+}
+
+.box-footer {
+    background: rgba(13, 15, 18, 0.6) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────── */
+.btn-primary,
+.btn-blue {
+    background: linear-gradient(135deg, #ff7a00 0%, #e56700 100%) !important;
+    border-color: #c65500 !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-blue:hover {
+    background: linear-gradient(135deg, #ff9633 0%, #ff7a00 100%) !important;
+    border-color: #e56700 !important;
+    box-shadow: 0 0 14px rgba(255, 122, 0, 0.3);
+}
+
+.btn-default {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    color: #f5f7fa !important;
+}
+
+.btn-default:hover {
+    border-color: #ff7a00 !important;
+    color: #ffb266 !important;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+.table {
+    color: #f5f7fa;
+}
+
+.table > thead > tr > th {
+    border-bottom: 2px solid rgba(255, 122, 0, 0.4);
+    color: #ffb266;
+}
+
+.table > tbody > tr > td,
+.table > tbody > tr > th,
+.table > tfoot > tr > td {
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.table-hover > tbody > tr:hover {
+    background: rgba(255, 122, 0, 0.06);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Forms ────────────────────────────────────────────────────────────── */
+.form-control,
+.input-group .input-group-addon,
+select.form-control,
+textarea.form-control {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f5f7fa !important;
+}
+
+.form-control:focus {
+    border-color: #ff7a00 !important;
+    box-shadow: 0 0 0 2px rgba(255, 122, 0, 0.3) !important;
+}
+
+.form-control::placeholder {
+    color: #9aa3ad;
+}
+
+select.form-control option {
+    background: #14161a;
+    color: #f5f7fa;
+}
+
+label,
+.control-label {
+    color: #d8dee5;
+}
+
+.help-block,
+p.small,
+.text-muted,
+small {
+    color: #9aa3ad !important;
+}
+
+.checkbox label,
+.radio label {
+    color: #d8dee5;
+}
+
+/* select2 dropdowns */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f5f7fa;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: #f5f7fa;
+}
+
+.select2-dropdown {
+    background: #14161a !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #f5f7fa;
+}
+
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background: #ff7a00 !important;
+}
+
+/* ── Nav tabs / pills ─────────────────────────────────────────────────── */
+.nav-tabs-custom {
+    background: rgba(18, 20, 24, 0.75) !important;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.nav-tabs-custom > .nav-tabs > li.active {
+    border-top-color: #ff7a00 !important;
+}
+
+.nav-tabs-custom > .nav-tabs > li.active > a {
+    background: transparent !important;
+    color: #ffffff !important;
+    border-color: transparent;
+}
+
+.nav-tabs-custom > .nav-tabs > li > a {
+    color: #9aa3ad;
+}
+
+.nav-tabs-custom > .tab-content {
+    background: transparent !important;
+    color: #f5f7fa;
+}
+
+/* ── Labels, callouts, alerts, pagination ─────────────────────────────── */
+.label-primary,
+.bg-blue,
+.bg-light-blue {
+    background-color: #ff7a00 !important;
+}
+
+.callout {
+    background: rgba(18, 20, 24, 0.75) !important;
+    color: #f5f7fa;
+    border-left-color: #ff7a00;
+    border-radius: 6px;
+}
+
+.callout.callout-danger {
+    border-left-color: #ef4444;
+}
+
+.callout.callout-warning {
+    border-left-color: #ffb266;
+}
+
+.alert-info {
+    background: rgba(255, 122, 0, 0.1) !important;
+    border: 1px solid #c65500 !important;
+    color: #ffd0a3 !important;
+}
+
+.pagination > li > a,
+.pagination > li > span {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f5f7fa;
+}
+
+.pagination > .active > a,
+.pagination > .active > span {
+    background: #ff7a00 !important;
+    border-color: #e56700 !important;
+    color: #ffffff !important;
+}
+
+/* ── Modals (bootstrap + sweetalert) ──────────────────────────────────── */
+.modal-content {
+    background: #14161a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f5f7fa;
+}
+
+.modal-header,
+.modal-footer {
+    border-color: rgba(255, 255, 255, 0.09);
+}
+
+.sweet-alert {
+    background: #14161a !important;
+}
+
+.sweet-alert h2,
+.sweet-alert p {
+    color: #f5f7fa !important;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────── */
+.main-footer {
+    background: rgba(13, 15, 18, 0.9) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    color: #9aa3ad;
+}
+
+/* ── Misc: well, list groups, progress, code ──────────────────────────── */
+.well {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #f5f7fa;
+}
+
+.list-group-item {
+    background: rgba(18, 20, 24, 0.75);
+    border-color: rgba(255, 255, 255, 0.07);
+    color: #f5f7fa;
+}
+
+.progress {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-bar {
+    background-color: #ff7a00;
+}
+
+code {
+    background: rgba(255, 122, 0, 0.12);
+    color: #ffb266;
+    border-radius: 4px;
+}
+
+pre {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: #d8dee5;
+}

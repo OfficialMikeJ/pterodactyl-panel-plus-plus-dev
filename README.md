@@ -1,72 +1,60 @@
-[![Logo Image](https://cdn.pterodactyl.io/logos/new/pterodactyl_logo.png)](https://pterodactyl.io)
+<p align="center">
+    <img src="public/logo.png" alt="Touch Down Hosting" width="320" />
+</p>
 
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/pterodactyl/panel/ci.yaml?label=Tests&style=for-the-badge&branch=1.0-develop)
-![Discord](https://img.shields.io/discord/122900397965705216?label=Discord&logo=Discord&logoColor=white&style=for-the-badge)
-![GitHub Releases](https://img.shields.io/github/downloads/pterodactyl/panel/latest/total?style=for-the-badge)
-![GitHub contributors](https://img.shields.io/github/contributors/pterodactyl/panel?style=for-the-badge)
+<h1 align="center">Touch Down Hosting — Panel</h1>
 
-# Pterodactyl Panel
+<p align="center">
+    The custom game server control panel powering <strong>Touch Down Hosting</strong> —
+    black, white and orange with a signature glass-morphism finish.
+    A heavily customized fork of <a href="https://pterodactyl.io">Pterodactyl Panel 1.14.1</a>.
+</p>
 
-Pterodactyl® is a free, open-source game server management panel built with PHP, React, and Go. Designed with security
-in mind, Pterodactyl runs all game servers in isolated Docker containers while exposing a beautiful and intuitive
-UI to end users.
+---
 
-Stop settling for less. Make game servers a first class citizen on your platform.
+## Features
 
-![Image](https://cdn.pterodactyl.io/site-assets/pterodactyl_v1_demo.gif)
+Everything Pterodactyl does, plus the Touch Down Hosting experience:
 
-## Documentation
+- **Full glass-morphism reskin** — black/white/orange design system across the entire panel, admin area included
+- **Trophy & EXP system** — 50 trophies across Bronze / Silver / Gold / Platinum tiers, earned for everyday panel actions, with toast notifications and level/EXP progression
+- **Theming system** — four built-in themes (Cool Orange, Cool Blue Ocean, Cool Green Mint, Cool Silk Purple) plus unlimited custom `.json` themes dropped into `public/themes/` — no rebuild needed
+- **Redesigned login** — glass login card, pulsating logo splash sequence, "Save my login for 30 days" remember-me
+- **Services & Billing tab** — Stripe/PayPal key configuration (encrypted at rest), draggable pricing cards, OFF-by-default enable switch
+- **Dev-Blogs & public roadmap** — hardcoded, externally-edited update feed with a Current Build card and To-Do roadmap
+- **Storage attach** *(dev build)* — register extra disks, cloud volumes (Linode, Hetzner, OVH, DigitalOcean), NAS systems (HexOS, TrueNAS, OpenMediaVault, CasaOS, Unraid) and Windows SMB shares with one command or a few clicks
+- **Master admin password reset** — `reset-master-password.sh` in the panel root; strong password policy enforced everywhere
+- **Discord support button** — on every auth screen and in account settings
 
-* [Panel Documentation](https://pterodactyl.io/panel/1.0/getting_started.html)
-* [Wings Documentation](https://pterodactyl.io/wings/1.0/installing.html)
-* [Community Guides](https://pterodactyl.io/community/about.html)
-* Or, get additional help [via Discord](https://discord.gg/pterodactyl)
+## Build channels
 
-## Sponsors
+| Channel | Branch | Purpose | Auto-update |
+| --- | --- | --- | --- |
+| `public` | `main` | Customer-facing **Alpha** build | Manual |
+| `dev` | `dev` | Internal build with dev-only features (Dev Lab, Storage) | Nightly systemd timer |
 
-I would like to extend my sincere thanks to the following sponsors for helping fund Pterodactyl's development.
-[Interested in becoming a sponsor?](https://github.com/sponsors/pterodactyl)
+The version badge in the panel's navigation bar shows the active channel and build; clicking it opens the Dev-Blogs page.
 
-| Company                                                                           | About                                                                                                                                                                                                                                           |
-|-----------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [**Aussie Server Hosts**](https://aussieserverhosts.com/)                         | No frills Australian Owned and operated High Performance Server hosting for some of the most demanding games serving Australia and New Zealand.                                                                                                 |
-| [**BisectHosting**](https://www.bisecthosting.com/)                               | BisectHosting provides Minecraft, Valheim and other server hosting services with the highest reliability and lightning fast support since 2012.                                                                                                 |
-| [**MineStrator**](https://minestrator.com/)                                       | Looking for the most highend French hosting company for your minecraft server? More than 24,000 members on our discord trust us. Give us a try!                                                                                                 |
-| [**HostEZ**](https://hostez.io)                                                   | US & EU Rust & Minecraft Hosting. DDoS Protected bare metal, VPS and colocation with low latency, high uptime and maximum availability. EZ!                                                                                                     |
-| [**Blueprint**](https://blueprint.zip/?utm_source=pterodactyl&utm_medium=sponsor) | Create and install Pterodactyl addons and themes with the growing Blueprint framework - the package-manager for Pterodactyl. Use multiple modifications at once without worrying about conflicts and make use of the large extension ecosystem. |
-| [**indifferent broccoli**](https://indifferentbroccoli.com/)                      | indifferent broccoli is a game server hosting and rental company. With us, you get top-notch computer power for your gaming sessions. We destroy lag, latency, and complexity--letting you focus on the fun stuff.                              |
+## Installation
 
-### Supported Games
+Automated installers for Ubuntu 22.04/24.04 and Debian 11/12 live in [`installer/`](installer/README.md):
 
-Pterodactyl supports a wide variety of games by utilizing Docker containers to isolate each instance. This gives
-you the power to run game servers without bloating machines with a host of additional dependencies.
+```bash
+git clone <your-repo-url> /tmp/tdh
+bash /tmp/tdh/installer/install-touchdown-panel.sh
+```
 
-Some of our core supported games include:
+The installer handles PHP 8.3, MariaDB, Redis, nginx, Node.js 22 asset builds, Let's Encrypt, the queue worker and cron. Updating is one command: `bash installer/update-touchdown-panel.sh`.
 
-* Minecraft — including Paper, Sponge, Bungeecord, Waterfall, and more
-* Rust
-* Terraria
-* Teamspeak
-* Mumble
-* Team Fortress 2
-* Counter Strike: Global Offensive
-* Garry's Mod
-* ARK: Survival Evolved
+Wings (the game server daemon) is unmodified in this fork — install it with the official tooling: <https://pterodactyl-installer.se>
 
-In addition to our standard nest of supported games, our community is constantly pushing the limits of this software
-and there are plenty more games available provided by the community. Some of these games include:
+## Customizing
 
-* Factorio
-* San Andreas: MP
-* Pocketmine MP
-* Squad
-* Xonotic
-* Starmade
-* Discord ATLBot, and most other Node.js/Python discord bots
-* [and many more...](https://pterodactyleggs.com)
+- **Themes**: drop a `.json` file into `public/themes/` (see the built-in themes for the format)
+- **Dev-Blog posts / roadmap**: edit `resources/scripts/touchdown/devblogs.ts` / `roadmap.ts`, then rebuild assets
+- **Trophies**: add entries to `app/Services/Touchdown/TrophyRegistry.php` — no database changes required
+- **Logo**: replace `public/logo.png` — it auto-sizes everywhere it appears
 
-## License
+## Credits & License
 
-Pterodactyl® Copyright © 2015 - 2022 Dane Everitt and contributors.
-
-Code released under the [MIT License](./LICENSE.md).
+Built on [Pterodactyl Panel](https://pterodactyl.io) — © 2015–present Pterodactyl Software, released under the [MIT License](LICENSE.md). All Touch Down Hosting modifications are provided under the same license. This project is not affiliated with or endorsed by Pterodactyl Software.
