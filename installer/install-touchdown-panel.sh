@@ -325,13 +325,34 @@ configure_panel() {
   # .env holds APP_KEY and database credentials — keep it out of reach of
   # other local users.
   chmod 600 "$PANEL_DIR/.env"
+
+  # www-data must be able to traverse EVERY parent directory of the panel.
+  # Home directories are mode 0750 on Ubuntu >=21.04 / Debian >=12, so a panel
+  # installed under /home is unreachable by the web server until the search
+  # bit is granted — the failure looks like php-fpm's "File not found.".
+  # o+x grants path resolution only; directory contents stay unlistable.
+  local dir="$PANEL_DIR"
+  while [ "$dir" != "/" ] && [ -n "$dir" ]; do
+    if ! runuser -u www-data -- test -x "$dir" 2>/dev/null; then
+      chmod o+x "$dir" 2>/dev/null && log "Granted www-data traverse access to ${dir}"
+    fi
+    dir="$(dirname "$dir")"
+  done
+  if ! runuser -u www-data -- test -r "${PANEL_DIR}/public/index.php" 2>/dev/null; then
+    error "www-data still cannot read ${PANEL_DIR}/public/index.php."
+    error "Run installer/repair-touchdown-panel.sh after this finishes."
+  fi
+
   success "Panel configured"
 }
 
 # ── Services: cron, queue worker, nginx, SSL ───────────────────────────────
 setup_services() {
   log "Installing cron schedule and queue worker..."
-  crontab -u www-data -l 2>/dev/null | { cat; echo "* * * * * php ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"; } | sort -u | crontab -u www-data -
+  # Never sort a crontab — environment assignments (PATH, MAILTO) are positional.
+  { crontab -u www-data -l 2>/dev/null | grep -v 'artisan schedule:run'
+    echo "* * * * * /usr/bin/php${PHP_VERSION} ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"
+  } | grep -v '^$' | crontab -u www-data -
 
   cat > /etc/systemd/system/pteroq.service <<EOF
 [Unit]

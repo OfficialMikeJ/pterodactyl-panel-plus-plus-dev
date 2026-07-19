@@ -86,24 +86,41 @@ creates a `touchdown-update.timer` systemd unit (check it with
 ```bash
 sudo bash installer/repair-touchdown-panel.sh            # check + auto-fix
 sudo bash installer/repair-touchdown-panel.sh --check    # report only, change nothing
+sudo bash installer/repair-touchdown-panel.sh --seed     # also re-import stock eggs
 sudo PANEL_DIR=/path/to/panel bash installer/repair-touchdown-panel.sh
 ```
 
-Finds the panel automatically and checks every subsystem, fixing what it can:
+Finds the panel automatically and checks every subsystem. **Every repair is
+verified by re-running its own check**, so a `[ FIX ]` line means the problem
+is actually gone — not merely that a command ran. Exits non-zero if anything
+could not be repaired.
 
 | Area | Checks / fixes |
 | --- | --- |
-| `.env` | Present, `APP_KEY` generated (works even when Laravel cannot boot), `APP_URL` sane (no `https` on a bare IP), mode 600 |
-| Filesystem | Laravel runtime directories, `www-data` ownership, storage permissions |
-| Dependencies | `vendor/` (composer), built frontend assets (yarn) |
-| Services | mariadb, redis, nginx, PHP-FPM running |
-| Database | Connection works, pending migrations applied |
-| Web server | Panel site exists + enabled, **nginx's default site removed** (the classic "Welcome to nginx!" page), config valid, reload |
-| Workers | `pteroq` queue worker, scheduler cron entry |
-| Result | Final HTTP check plus the address the panel is reachable on |
+| Discovery | Panel path, PHP version, php-fpm service, **pool user and listener** (never assumed to be `www-data`/8.3) |
+| Access proof | Whether the pool user can genuinely `read` `public/index.php` — tested *as that user*, plus inside php-fpm's own mount namespace |
+| Traversal | Search (`o+x`, or an ACL) on **every parent directory** — the cause of php-fpm's `File not found.` for panels under `/home` |
+| Sandboxing | `ProtectHome=` / `ProtectSystem=strict` on php-fpm or nginx → systemd drop-in override |
+| PHP limits | `open_basedir`, `chroot`, AppArmor/SELinux — **reported, never auto-edited** |
+| `.env` | `APP_KEY` (verified, and never rotated over existing data), `APP_URL` (only downgraded from https when no certificate exists), mode 600, duplicate keys, CRLF |
+| Filesystem | Runtime directories, ownership, dirs 755 / files 644 (never `chmod -R 755`, which would expose `laravel.log`) |
+| Dependencies | `vendor/`, built assets — **with a backup restored if the rebuild fails**, and a RAM check first |
+| Services | mariadb, redis (`PING`), nginx, php-fpm; required PHP extensions; disk/inode space |
+| Database | Connection, pending migrations by **exit code**; schema only — seeding is behind `--seed` because it overwrites egg customisations |
+| Web server | Site exists/enabled, `root` matches the panel, `fastcgi_pass` matches the live socket, `server_name`/`default_server` answer requests by IP, stale blocks **moved aside (never deleted)**, `nginx -t` **with rollback** |
+| Workers | `pteroq` `ExecStart` points at this panel; scheduler cron (never `sort`ed) |
+| Result | End-to-end HTTP check with body inspection; on failure it prints the nginx, php-fpm and Laravel log tails |
 
-It never deletes data and never touches database contents, so it is safe to
-run repeatedly.
+It never deletes data, never seeds the database unless asked, and moves rather
+than deletes any nginx config it disables — safe to run repeatedly.
+
+### If the panel lives under `/home`
+
+Home directories are mode `0750` on Ubuntu ≥ 21.04 and Debian ≥ 12, so
+`www-data` cannot traverse into them and php-fpm reports `File not found.`
+with an otherwise-perfect install. The installer and repair script both grant
+the minimal search bit automatically. Installing to `/var/www/touchdown`
+avoids the situation entirely.
 
 ## Wings
 
