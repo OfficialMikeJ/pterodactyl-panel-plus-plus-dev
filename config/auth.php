@@ -54,6 +54,9 @@ return [
         'web' => [
             'driver' => 'session',
             'provider' => 'users',
+            // "Save my login for 30 days" — remember-me cookie lifetime in
+            // minutes (Laravel's default is five years).
+            'remember' => 43200,
         ],
 
         'api' => [
