@@ -300,6 +300,9 @@ configure_panel() {
     --no-interaction
 
   chown -R www-data:www-data "$PANEL_DIR"
+  # .env holds APP_KEY and database credentials — keep it out of reach of
+  # other local users.
+  chmod 600 "$PANEL_DIR/.env"
   success "Panel configured"
 }
 
