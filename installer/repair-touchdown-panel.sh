@@ -142,11 +142,24 @@ discover_fpm() {
   NGINX_USER="$(awk '$1=="user"{v=$2; sub(/;.*/,"",v); print v; exit}' /etc/nginx/nginx.conf 2>/dev/null)"
   NGINX_USER="${NGINX_USER:-www-data}"
 
+  # Resolve a PHP binary that actually exists. systemd and cron need an
+  # absolute path, and a wrong one fails with 203/EXEC (service never starts).
+  PHP_BIN=""
+  for cand in "/usr/bin/php${PHP_VER}" "$(command -v "php${PHP_VER}" 2>/dev/null)" "$(command -v php 2>/dev/null)" /usr/bin/php; do
+    [ -n "$cand" ] && [ -x "$cand" ] && { PHP_BIN="$cand"; break; }
+  done
+  if [ -z "$PHP_BIN" ]; then
+    note_issue; note_unresolved
+    bad "No usable PHP binary found — install php${PHP_VER:-8.3}-cli"
+    PHP_BIN="/usr/bin/php"
+  fi
+
   if [ -z "$FPM_SVC" ]; then
     note_issue; note_unresolved
     bad "No php-fpm service found — the panel cannot serve PHP. Install php${PHP_VER:-8.3}-fpm."
   fi
   ok "php-fpm: svc=${FPM_SVC:-none} user=${FPM_USER} listen=${FPM_TARGET:-none} | nginx worker=${NGINX_USER}"
+  ok "PHP binary: ${PHP_BIN}"
 }
 discover_fpm
 
@@ -744,13 +757,13 @@ repair_pteroq() {
   cat > /etc/systemd/system/pteroq.service <<EOF
 [Unit]
 Description=Touch Down Hosting Panel Queue Worker
-After=redis-server.service
+After=redis-server.service mariadb.service
 
 [Service]
 User=${FPM_USER}
 Group=${FPM_USER}
 Restart=always
-ExecStart=/usr/bin/php${PHP_VER} ${PANEL_DIR}/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
+ExecStart=${PHP_BIN} ${PANEL_DIR}/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
 StartLimitInterval=180
 StartLimitBurst=30
 RestartSec=5s
@@ -759,8 +772,22 @@ RestartSec=5s
 WantedBy=multi-user.target
 EOF
   systemctl daemon-reload
-  systemctl enable --now pteroq >/dev/null 2>&1
-  detail "pteroq.service now runs ${PANEL_DIR}/artisan as ${FPM_USER}"
+  systemctl enable pteroq >/dev/null 2>&1
+  systemctl restart pteroq >/dev/null 2>&1
+  detail "pteroq.service now runs ${PHP_BIN} ${PANEL_DIR}/artisan as ${FPM_USER}"
+
+  # Give it a moment to fail, then explain WHY rather than just reporting a
+  # failed verification. A queue worker that cannot reach redis/the database
+  # crash-loops, and the reason only appears in the journal.
+  sleep 2
+  if ! systemctl is-active --quiet pteroq; then
+    bad "pteroq did not stay running. Reason:"
+    systemctl status pteroq --no-pager -n 5 2>/dev/null | sed 's/^/         /'
+    journalctl -u pteroq -n 15 --no-pager 2>/dev/null | sed 's/^/         /'
+    detail "Common causes: redis/database unreachable, or .env not yet configured."
+    detail "The panel web interface works without the queue worker — this affects"
+    detail "scheduled tasks, server installs, backups and outgoing email only."
+  fi
   return 0
 }
 repair_step "Queue worker (pteroq) runs the correct panel" pteroq_ok repair_pteroq
@@ -774,7 +801,7 @@ repair_cron() {
   fi
   # Never sort a crontab: environment assignments are positional.
   { printf '%s\n' "$cur" | grep -v 'artisan schedule:run'
-    echo "* * * * * /usr/bin/php${PHP_VER} ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"
+    echo "* * * * * ${PHP_BIN} ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"
   } | grep -v '^$' | crontab -u "$FPM_USER" -
   detail "Scheduler cron entry set to ${PANEL_DIR}/artisan (stale entries removed, order preserved)"
   return 0

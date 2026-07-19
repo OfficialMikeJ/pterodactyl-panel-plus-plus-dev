@@ -349,9 +349,18 @@ configure_panel() {
 # ── Services: cron, queue worker, nginx, SSL ───────────────────────────────
 setup_services() {
   log "Installing cron schedule and queue worker..."
+
+  # systemd and cron need an absolute path to PHP; a path that does not exist
+  # fails with 203/EXEC and the unit never starts.
+  PHP_BIN=""
+  for cand in "/usr/bin/php${PHP_VERSION}" "$(command -v "php${PHP_VERSION}" 2>/dev/null)" "$(command -v php 2>/dev/null)"; do
+    [ -n "$cand" ] && [ -x "$cand" ] && { PHP_BIN="$cand"; break; }
+  done
+  [ -n "$PHP_BIN" ] || { error "No usable PHP binary found."; exit 1; }
+
   # Never sort a crontab — environment assignments (PATH, MAILTO) are positional.
   { crontab -u www-data -l 2>/dev/null | grep -v 'artisan schedule:run'
-    echo "* * * * * /usr/bin/php${PHP_VERSION} ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"
+    echo "* * * * * ${PHP_BIN} ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"
   } | grep -v '^$' | crontab -u www-data -
 
   cat > /etc/systemd/system/pteroq.service <<EOF
@@ -363,7 +372,7 @@ After=redis-server.service
 User=www-data
 Group=www-data
 Restart=always
-ExecStart=/usr/bin/php ${PANEL_DIR}/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
+ExecStart=${PHP_BIN} ${PANEL_DIR}/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3
 StartLimitInterval=180
 StartLimitBurst=30
 RestartSec=5s
