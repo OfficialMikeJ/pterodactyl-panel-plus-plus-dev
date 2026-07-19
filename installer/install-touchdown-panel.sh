@@ -220,6 +220,9 @@ setup_database() {
   mariadb <<SQL
 CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASSWORD}';
+-- Force the password on re-runs: this script generates a fresh DB_PASSWORD
+-- each run, and a pre-existing user would otherwise keep the old one.
+ALTER USER '${DB_USER}'@'127.0.0.1' IDENTIFIED BY '${DB_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_USER}'@'127.0.0.1' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 SQL
@@ -236,6 +239,12 @@ install_panel() {
     git clone --branch "$GIT_BRANCH" --depth 1 "$GIT_REPO" "$PANEL_DIR"
   fi
   cd "$PANEL_DIR"
+
+  # Git clones do not include Laravel's runtime directories (they are ignored
+  # in the repo); without them the app fails to boot with
+  # "Please provide a valid cache path."
+  mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views \
+    storage/logs bootstrap/cache
 
   chmod -R 755 storage/* bootstrap/cache/ 2>/dev/null || true
   cp -n .env.example .env
@@ -309,7 +318,8 @@ configure_panel() {
     --name-last="$ADMIN_LAST" \
     --password="$ADMIN_PASSWORD" \
     --admin=1 \
-    --no-interaction
+    --no-interaction \
+    || log "Admin user already exists — skipping (use reset-master-password.sh to change its password)."
 
   chown -R www-data:www-data "$PANEL_DIR"
   # .env holds APP_KEY and database credentials — keep it out of reach of
