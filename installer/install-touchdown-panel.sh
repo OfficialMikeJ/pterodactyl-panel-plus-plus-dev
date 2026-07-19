@@ -255,6 +255,16 @@ configure_panel() {
 
   php artisan key:generate --force
 
+  # Hard-verify the encryption key actually landed in .env — everything
+  # downstream (sessions, encrypted billing keys, SMB credentials) depends on
+  # it, and a silent failure here surfaces later as the confusing
+  # "No application encryption key has been specified." error.
+  if ! grep -q '^APP_KEY=base64:' .env; then
+    error "APP_KEY was not written to .env — 'php artisan key:generate' failed. Aborting."
+    exit 1
+  fi
+  success "Application encryption key generated"
+
   php artisan p:environment:setup \
     --author="$ADMIN_EMAIL" \
     --url="https://${FQDN}" \
