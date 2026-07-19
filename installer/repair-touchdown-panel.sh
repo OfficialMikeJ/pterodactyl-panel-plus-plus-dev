@@ -745,13 +745,26 @@ fi
 
 # ── 13. Background workers ─────────────────────────────────────────────────
 head_ "Background workers"
+PTEROQ_UNIT="/etc/systemd/system/pteroq.service"
+
+# Reports which specific condition failed, so a failure is actionable rather
+# than just "verification failed".
+pteroq_why() {
+  [ -f "$PTEROQ_UNIT" ] || { echo "unit file ${PTEROQ_UNIT} does not exist"; return; }
+  grep -qE "^ExecStart=.*${PANEL_DIR}/artisan" "$PTEROQ_UNIT" \
+    || { echo "ExecStart in the unit file does not reference ${PANEL_DIR}/artisan: $(grep -E '^ExecStart=' "$PTEROQ_UNIT" || echo '<no ExecStart line>')"; return; }
+  systemctl is-active --quiet pteroq \
+    || { echo "service is not active (state: $(systemctl is-active pteroq 2>&1))"; return; }
+  echo "unknown"
+}
+
 pteroq_ok() {
-  systemctl list-unit-files 2>/dev/null | grep -q '^pteroq\.service' || return 1
+  # Match against the unit file we control, not systemd's rendered ExecStart
+  # property, whose format varies between systemd versions.
+  [ -f "$PTEROQ_UNIT" ] || return 1
+  grep -qE "^ExecStart=.*${PANEL_DIR}/artisan" "$PTEROQ_UNIT" || return 1
   systemctl is-active --quiet pteroq || return 1
-  case "$(systemctl show pteroq -p ExecStart --value 2>/dev/null)" in
-    *"${PANEL_DIR}/artisan"*) return 0 ;;
-    *) return 1 ;;
-  esac
+  return 0
 }
 repair_pteroq() {
   cat > /etc/systemd/system/pteroq.service <<EOF
@@ -790,7 +803,11 @@ EOF
   fi
   return 0
 }
-repair_step "Queue worker (pteroq) runs the correct panel" pteroq_ok repair_pteroq
+if ! repair_step "Queue worker (pteroq) runs the correct panel" pteroq_ok repair_pteroq; then
+  detail "Reason: $(pteroq_why)"
+  detail "The panel web interface does NOT depend on this worker — it affects"
+  detail "scheduled tasks, server installs, backups and outgoing email only."
+fi
 
 cron_ok() { crontab -u "$FPM_USER" -l 2>/dev/null | grep -qF "${PANEL_DIR}/artisan schedule:run"; }
 repair_cron() {
