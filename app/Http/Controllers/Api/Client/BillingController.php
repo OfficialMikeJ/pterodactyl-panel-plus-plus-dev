@@ -75,6 +75,23 @@ class BillingController extends ClientApiController
             $this->settings->set(self::KEY_PAYPAL_SECRET, Crypt::encryptString($data['paypal_secret']));
         }
 
+        // Touch Down Hosting: services enabled with BOTH gateways holding a
+        // publishable/client id and a stored secret means billing is fully
+        // wired up — worth a trophy.
+        $fullyConfigured = $data['enabled']
+            && !empty($this->settings->get(self::KEY_STRIPE_PUBLISHABLE, ''))
+            && !empty($this->settings->get(self::KEY_STRIPE_SECRET, ''))
+            && !empty($this->settings->get(self::KEY_PAYPAL_CLIENT, ''))
+            && !empty($this->settings->get(self::KEY_PAYPAL_SECRET, ''));
+
+        if ($fullyConfigured) {
+            try {
+                \Pterodactyl\Facades\Activity::event('touchdown:billing.configured')->log();
+            } catch (\Throwable) {
+                // Trophies must never break a settings save.
+            }
+        }
+
         return $this->index($request);
     }
 

@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, NavLink } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCogs, faLayerGroup, faPalette, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
@@ -77,6 +78,7 @@ export default () => {
     const [themeMenuOpen, setThemeMenuOpen] = useState(false);
     const [activeTheme, setActiveTheme] = useState(getActiveThemeId());
     const menuRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
 
     useEffect(() => {
         fetchThemes().then(setThemes);
@@ -86,13 +88,25 @@ export default () => {
         if (!themeMenuOpen) return;
 
         const listener = (e: MouseEvent) => {
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+            const target = e.target as Node;
+            // Ignore the toggle button itself: closing here on mousedown would
+            // let its own onClick immediately reopen the menu.
+            if (buttonRef.current?.contains(target)) return;
+            if (menuRef.current && !menuRef.current.contains(target)) {
                 setThemeMenuOpen(false);
             }
         };
 
+        const onEscape = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setThemeMenuOpen(false);
+        };
+
         document.addEventListener('mousedown', listener);
-        return () => document.removeEventListener('mousedown', listener);
+        document.addEventListener('keydown', onEscape);
+        return () => {
+            document.removeEventListener('mousedown', listener);
+            document.removeEventListener('keydown', onEscape);
+        };
     }, [themeMenuOpen]);
 
     const onSelectTheme = (theme: TouchDownTheme) => {
@@ -127,24 +141,33 @@ export default () => {
                         </NavLink>
                     </Tooltip>
                     <Tooltip placement={'bottom'} content={'Themes'}>
-                        <button onClick={() => setThemeMenuOpen((s) => !s)}>
+                        <button ref={buttonRef} onClick={() => setThemeMenuOpen((s) => !s)}>
                             <FontAwesomeIcon icon={faPalette} />
                         </button>
                     </Tooltip>
-                    {themeMenuOpen && (
-                        <ThemeMenu ref={menuRef}>
-                            {themes.map((theme) => (
-                                <button
-                                    key={theme.id}
-                                    className={theme.id === activeTheme ? 'active' : undefined}
-                                    onClick={() => onSelectTheme(theme)}
-                                >
-                                    <Swatch $color={theme.colors.brand['500']} />
-                                    {theme.name}
-                                </button>
-                            ))}
-                        </ThemeMenu>
-                    )}
+                    {/*
+                     * Rendered through a portal: the navigation bar uses
+                     * backdrop-filter, which makes it the containing block for
+                     * position:fixed children, and its overflow-x:auto clips
+                     * anything drawn below it. Inside the bar this menu mounted
+                     * but was clipped to nothing.
+                     */}
+                    {themeMenuOpen &&
+                        createPortal(
+                            <ThemeMenu ref={menuRef}>
+                                {themes.map((theme) => (
+                                    <button
+                                        key={theme.id}
+                                        className={theme.id === activeTheme ? 'active' : undefined}
+                                        onClick={() => onSelectTheme(theme)}
+                                    >
+                                        <Swatch $color={theme.colors.brand['500']} />
+                                        {theme.name}
+                                    </button>
+                                ))}
+                            </ThemeMenu>,
+                            document.body
+                        )}
                     {rootAdmin && (
                         <Tooltip placement={'bottom'} content={'Admin'}>
                             <a href={'/admin'} rel={'noreferrer'}>

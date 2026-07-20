@@ -5,6 +5,8 @@ namespace Pterodactyl\Services\Servers;
 use Ramsey\Uuid\Uuid;
 use Illuminate\Support\Arr;
 use Pterodactyl\Models\Egg;
+use Pterodactyl\Facades\Activity;
+use Illuminate\Support\Facades\Log;
 use Pterodactyl\Models\User;
 use Webmozart\Assert\Assert;
 use Pterodactyl\Models\Server;
@@ -101,6 +103,20 @@ class ServerCreationService
             $this->serverDeletionService->withForce()->handle($server);
 
             throw $exception;
+        }
+
+        // Touch Down Hosting: record the install so the trophy system can count
+        // setups and spot which datacenter/location the node lives in.
+        try {
+            $location = $server->node?->location;
+            Activity::event('server:install')
+                ->subject($server)
+                ->property('name', $server->name)
+                ->property('egg', $server->egg?->name)
+                ->property('location', trim(($location?->short ?? '') . ' ' . ($location?->long ?? '')))
+                ->log();
+        } catch (\Throwable $exception) {
+            Log::warning('Failed to log server install activity.', ['exception' => $exception->getMessage()]);
         }
 
         return $server;

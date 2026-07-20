@@ -4,6 +4,7 @@ namespace Pterodactyl\Services\Servers;
 
 use Illuminate\Http\Response;
 use Pterodactyl\Models\Server;
+use Pterodactyl\Facades\Activity;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\ConnectionInterface;
 use Pterodactyl\Repositories\Wings\DaemonServerRepository;
@@ -80,6 +81,19 @@ class ServerDeletionService
             // clear any allocation notes for the server
             $server->allocations()->update(['notes' => null]);
 
+            // Touch Down Hosting: record the deletion before the row disappears
+            // so the trophy system can see which game was removed. Logged
+            // without a subject because the server is about to be deleted.
+            try {
+                Activity::event('server:delete')
+                    ->property('name', $server->name)
+                    ->property('egg', $server->egg?->name)
+                    ->property('nest', $server->egg?->nest?->name)
+                    ->log();
+            } catch (\Throwable $exception) {
+                // Never let activity logging block a deletion.
+                Log::warning('Failed to log server deletion activity.', ['exception' => $exception->getMessage()]);
+            }
 
             $server->delete();
         });

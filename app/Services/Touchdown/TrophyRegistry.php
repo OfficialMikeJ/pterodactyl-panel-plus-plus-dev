@@ -84,9 +84,24 @@ class TrophyRegistry
             ['key' => 'delete-100', 'name' => 'Scorched Earth', 'description' => 'Delete files 100 times.', 'tier' => 'gold', 'icon' => 'fire', 'event' => 'server:file.delete', 'threshold' => 100],
             ['key' => 'subuser-10', 'name' => 'Guild Master', 'description' => 'Invite 10 subusers to your servers.', 'tier' => 'gold', 'icon' => 'chess-king', 'event' => 'server:subuser.create', 'threshold' => 10],
 
+            // ── Meme tier — deleting specific games ─────────────────────────────
+            ['key' => 'delete-arma', 'name' => "Arma'd By the Best", 'description' => 'Delete an Arma 3 server.', 'tier' => 'silver', 'icon' => 'bomb', 'event' => 'server:delete:arma', 'threshold' => 1],
+            ['key' => 'delete-squad', 'name' => "Squad'd RPG", 'description' => 'Delete a Squad server.', 'tier' => 'silver', 'icon' => 'users', 'event' => 'server:delete:squad', 'threshold' => 1],
+            ['key' => 'delete-rust', 'name' => 'Door Camper DB', 'description' => 'Delete a Rust server.', 'tier' => 'silver', 'icon' => 'fire', 'event' => 'server:delete:rust', 'threshold' => 1],
+            ['key' => 'delete-minecraft', 'name' => "Mine'd to Death", 'description' => 'Delete a Minecraft server.', 'tier' => 'silver', 'icon' => 'bomb', 'event' => 'server:delete:minecraft', 'threshold' => 1],
+            ['key' => 'delete-icarus', 'name' => 'ICARUS Made Me Do It', 'description' => 'Delete an ICARUS server.', 'tier' => 'silver', 'icon' => 'rocket', 'event' => 'server:delete:icarus', 'threshold' => 1],
+
+            // ── Troll tier — questionable dedication ────────────────────────────
+            ['key' => 'sir-clicksalot', 'name' => 'Sir Clicksalot', 'description' => 'Open server files 10 times. Just checking on them.', 'tier' => 'bronze', 'icon' => 'file-code', 'event' => 'server:file.read', 'threshold' => 10],
+            ['key' => 'mrserverbosti', 'name' => 'MrServerbosti', 'description' => 'Set up and install 10 servers.', 'tier' => 'silver', 'icon' => 'server', 'event' => 'server:install', 'threshold' => 10],
+            ['key' => 'fifty-servers', 'name' => '50 Servers or Die Trying', 'description' => 'Install 50 servers. Nobody asked you to.', 'tier' => 'gold', 'icon' => 'boxes', 'event' => 'server:install', 'threshold' => 50],
+            ['key' => 'daserversbaby', 'name' => 'DaServersBaby', 'description' => 'Install 100 servers. Seek help.', 'tier' => 'platinum', 'icon' => 'chess-king', 'event' => 'server:install', 'threshold' => 100],
+            ['key' => 'si6x-is-back', 'name' => 'The si6x is Back', 'description' => 'Set up a server in a Toronto, ON datacenter.', 'tier' => 'gold', 'icon' => 'network-wired', 'event' => 'server:install:toronto', 'threshold' => 1],
+            ['key' => 'payments-too-hard', 'name' => '2 Hard 4 the Servers', 'description' => 'Fully configure the payment system — both gateways, switched on.', 'tier' => 'gold', 'icon' => 'lock', 'event' => 'touchdown:billing.configured', 'threshold' => 1],
+
             // ── Platinum — legendary feats ──────────────────────────────────────
             ['key' => 'command-1000', 'name' => 'Keyboard Warrior', 'description' => 'Send 1,000 console commands.', 'tier' => 'platinum', 'icon' => 'bolt', 'event' => 'server:console.command', 'threshold' => 1000],
-            ['key' => self::COMPLETIONIST_KEY, 'name' => '100% Club', 'description' => 'Earn every other trophy in the panel.', 'tier' => 'platinum', 'icon' => 'trophy', 'event' => null, 'threshold' => 49],
+            ['key' => self::COMPLETIONIST_KEY, 'name' => '100% Club', 'description' => 'Earn every other trophy in the panel.', 'tier' => 'platinum', 'icon' => 'trophy', 'event' => null, 'threshold' => 60],
         ];
     }
 
