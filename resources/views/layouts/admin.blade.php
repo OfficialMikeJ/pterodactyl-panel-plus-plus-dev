@@ -73,7 +73,7 @@
                         <li class="header">BASIC ADMINISTRATION</li>
                         <li class="{{ Route::currentRouteName() !== 'admin.index' ?: 'active' }}">
                             <a href="{{ route('admin.index') }}">
-                                <i class="fa fa-home"></i> <span>Overview</span>
+                                <i class="fa fa-tachometer"></i> <span>Overview</span>
                             </a>
                         </li>
                         <li class="{{ ! starts_with(Route::currentRouteName(), 'admin.settings') ?: 'active' }}">
@@ -83,7 +83,7 @@
                         </li>
                         <li class="{{ ! starts_with(Route::currentRouteName(), 'admin.api') ?: 'active' }}">
                             <a href="{{ route('admin.api.index')}}">
-                                <i class="fa fa-gamepad"></i> <span>Application API</span>
+                                <i class="fa fa-code"></i> <span>Application API</span>
                             </a>
                         </li>
                         <li class="header">MANAGEMENT</li>
@@ -98,7 +98,7 @@
                             </a>
                         </li>
                         <li class="{{ ! starts_with(Route::currentRouteName(), 'admin.nodes') ?: 'active' }}">
-                            <a href="{{ route('admin.nodes') }}">
+                            <a href="{{ route('admin.nodes') }}" id="tdh-nodes-link">
                                 <i class="fa fa-sitemap"></i> <span>Nodes</span>
                             </a>
                         </li>
@@ -115,12 +115,12 @@
                         <li class="header">SERVICE MANAGEMENT</li>
                         <li class="{{ ! starts_with(Route::currentRouteName(), 'admin.mounts') ?: 'active' }}">
                             <a href="{{ route('admin.mounts') }}">
-                                <i class="fa fa-magic"></i> <span>Mounts</span>
+                                <i class="fa fa-hdd-o"></i> <span>Mounts</span>
                             </a>
                         </li>
                         <li class="{{ ! starts_with(Route::currentRouteName(), 'admin.nests') ?: 'active' }}">
                             <a href="{{ route('admin.nests') }}">
-                                <i class="fa fa-th-large"></i> <span>Nests</span>
+                                <i class="fa fa-cubes"></i> <span>Nests</span>
                             </a>
                         </li>
                     </ul>
@@ -160,8 +160,53 @@
                     <strong><i class="fa fa-fw {{ $appIsGit ? 'fa-git-square' : 'fa-code-fork' }}"></i></strong> {{ $appVersion }}<br />
                     <strong><i class="fa fa-fw fa-clock-o"></i></strong> {{ round(microtime(true) - LARAVEL_START, 3) }}s
                 </div>
-                Copyright &copy; {{ date('Y') }} <strong>Touch Down Hosting</strong> &mdash; powered by <a href="https://pterodactyl.io/">Pterodactyl Software</a>.
+                Copyright &copy; {{ date('Y') }} <strong>Touch Down Hosting</strong> &mdash; powered by <a href="https://pterodactyl.io/">Pterodactyl Software</a>. <a href="{{ route('terms') }}" target="_blank">Terms</a>
             </footer>
+        </div>
+
+        {{-- Touch Down Hosting: early-build acknowledgement (shown once per browser session) --}}
+        <div class="modal fade tdh-modal" id="tdhEarlyBuildModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title"><i class="fa fa-exclamation-triangle"></i> Attention</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Attention, the Touch Down Hosting game panel is in very early build stages. Expect bugs,
+                            issues and occasional problems with servers and eggs. For bug reports please join our
+                            Discord and open a ticket in our <strong>#forums</strong> channel, where one of our support
+                            staff will get back to you when they are available.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="text-align:center;">
+                        <button type="button" class="btn tdh-btn-orange" id="tdhEarlyAckBtn">I acknowledge</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Touch Down Hosting: liability notice gating the Nodes section --}}
+        <div class="modal fade tdh-modal" id="tdhNodesModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title"><i class="fa fa-gavel"></i> Notice to all Admins &amp; Server Admin Users</h4>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Please be advised that the Touch Down Hosting game server panel will not be liable for any
+                            damages, loss of content, or any loss of profits. You agree to our Terms of Service and
+                            Terms of Use agreements when installing and setting up servers with the Touch Down Hosting
+                            game server panel.
+                        </p>
+                    </div>
+                    <div class="modal-footer" style="text-align:center;">
+                        <a href="{{ route('terms') }}" target="_blank" rel="noopener" class="btn tdh-btn-orange">See Terms Agreements</a>
+                        <button type="button" class="btn tdh-btn-orange" id="tdhNodesAckBtn">I acknowledge</button>
+                    </div>
+                </div>
+            </div>
         </div>
         @section('footer-scripts')
             <script src="/js/keyboard.polyfill.js" type="application/javascript"></script>
@@ -209,6 +254,32 @@
                 $(function () {
                     $('[data-toggle="tooltip"]').tooltip();
                 })
+            </script>
+
+            {{-- Touch Down Hosting notices: early-build warning + Nodes liability gate.
+                 Acknowledgements are remembered per browser session (sessionStorage),
+                 so each fresh session sees them once. --}}
+            <script>
+                $(function () {
+                    if (!sessionStorage.getItem('tdh_early_ack')) {
+                        $('#tdhEarlyBuildModal').modal({ backdrop: 'static', keyboard: false });
+                    }
+                    $('#tdhEarlyAckBtn').on('click', function () {
+                        sessionStorage.setItem('tdh_early_ack', '1');
+                        $('#tdhEarlyBuildModal').modal('hide');
+                    });
+
+                    $('#tdh-nodes-link').on('click', function (e) {
+                        if (sessionStorage.getItem('tdh_nodes_ack')) return;
+                        e.preventDefault();
+                        $('#tdhNodesModal').modal({ backdrop: 'static', keyboard: false });
+                    });
+                    $('#tdhNodesAckBtn').on('click', function () {
+                        sessionStorage.setItem('tdh_nodes_ack', '1');
+                        $('#tdhNodesModal').modal('hide');
+                        window.location.href = $('#tdh-nodes-link').attr('href');
+                    });
+                });
             </script>
         @show
     </body>

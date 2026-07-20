@@ -319,6 +319,54 @@ small {
     color: #ffffff !important;
 }
 
+/* ── Touch Down notice modals & the shared orange button ──────────────── */
+.tdh-btn-orange,
+.tdh-btn-orange:focus {
+    background: linear-gradient(135deg, #ff7a00 0%, #e56700 100%) !important;
+    border: 1px solid #c65500 !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 8px 22px;
+}
+
+.tdh-btn-orange:hover,
+.tdh-btn-orange:active {
+    background: linear-gradient(135deg, #ff9633 0%, #ff7a00 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 14px rgba(255, 122, 0, 0.35);
+    text-decoration: none;
+}
+
+.tdh-modal .modal-content {
+    background: rgba(13, 15, 18, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-top: 3px solid #ff7a00;
+    border-radius: 10px;
+    box-shadow: 0 16px 56px rgba(0, 0, 0, 0.65), 0 0 28px rgba(255, 122, 0, 0.25);
+    color: #f5f7fa;
+}
+
+.tdh-modal .modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.tdh-modal .modal-header .modal-title {
+    color: #ff9633;
+    font-weight: 600;
+}
+
+.tdh-modal .modal-body p {
+    color: #f5f7fa;
+    font-size: 14px;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.tdh-modal .modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
 /* ── Modals (bootstrap + sweetalert) ──────────────────────────────────── */
 .modal-content {
     background: #14161a;
@@ -339,6 +387,64 @@ small {
 .sweet-alert p {
     color: #f5f7fa !important;
 }
+
+/* ── Breadcrumbs & content header ─────────────────────────────────────── */
+.content-header .breadcrumb {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+}
+
+.content-header .breadcrumb > li > a,
+.content-header .breadcrumb > .active {
+    color: #9aa3ad;
+}
+
+.content-header .breadcrumb > li > a:hover {
+    color: #ff9633;
+}
+
+/* ── Overview stat boxes (small-box / info-box) ───────────────────────── */
+.small-box {
+    background: rgba(18, 20, 24, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    color: #f5f7fa !important;
+}
+
+.small-box > .inner {
+    color: #f5f7fa;
+}
+
+.small-box > .small-box-footer {
+    background: rgba(255, 122, 0, 0.15);
+    color: #ffb266;
+}
+
+.small-box > .small-box-footer:hover {
+    background: rgba(255, 122, 0, 0.3);
+    color: #ffffff;
+}
+
+.small-box .icon {
+    color: rgba(255, 122, 0, 0.25);
+}
+
+.info-box {
+    background: rgba(18, 20, 24, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 8px;
+    color: #f5f7fa;
+}
+
+.info-box-icon {
+    border-radius: 8px 0 0 8px;
+}
+
+.bg-aqua, .bg-teal { background-color: #ff7a00 !important; }
+.bg-green { background-color: #22c55e !important; }
+.bg-red { background-color: #ef4444 !important; }
+.bg-yellow, .bg-orange { background-color: #ffb266 !important; }
 
 /* ── Footer ───────────────────────────────────────────────────────────── */
 .main-footer {

@@ -21,5 +21,10 @@ Route::post('/api/storage/ingest', [Base\StorageAgentController::class, 'ingest'
     ->withoutMiddleware(['auth.session', RequireTwoFactorAuthentication::class])
     ->middleware('throttle:30,1');
 
+// Touch Down Hosting — public Terms of Service / Terms of Use.
+Route::get('/terms', Base\TermsController::class)
+    ->withoutMiddleware(['auth.session', RequireTwoFactorAuthentication::class])
+    ->name('terms');
+
 Route::get('/{react}', [Base\IndexController::class, 'index'])
     ->where('react', '^(?!(\/)?(api|auth|admin|daemon)).+');
