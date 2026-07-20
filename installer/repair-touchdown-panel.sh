@@ -876,6 +876,29 @@ repair_perms() {
 }
 repair_step "Runtime directories are writable by ${FPM_USER}" perms_ok repair_perms
 
+# ── 14b. Repository access (needed for updates, not for serving) ──────────
+head_ "Repository access"
+GIT_REMOTE="$(git -C "$PANEL_DIR" remote get-url origin 2>/dev/null)"
+if [ -z "$GIT_REMOTE" ]; then
+  warn "No git remote configured — installer/update-touchdown-panel.sh cannot pull updates"
+elif GIT_TERMINAL_PROMPT=0 git -C "$PANEL_DIR" ls-remote origin HEAD >/dev/null 2>&1; then
+  ok "Repository reachable: ${GIT_REMOTE} (branch: $(git -C "$PANEL_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null))"
+else
+  warn "Cannot reach ${GIT_REMOTE} — updates will fail until credentials are available."
+  detail "For a private repository, store a read-only token for root:"
+  detail "  printf 'https://USER:TOKEN@$(printf '%s' "${GIT_REMOTE#*://}" | cut -d/ -f1)\\n' > /root/.git-credentials"
+  detail "  chmod 600 /root/.git-credentials && git config --global credential.helper store"
+  detail "Use a Gitea access token (read:repository), never an account password."
+fi
+if [ -f /root/.git-credentials ] && [ "$(stat -c '%a' /root/.git-credentials 2>/dev/null)" != "600" ]; then
+  note_issue
+  if [ "$CHECK_ONLY" = "no" ]; then
+    chmod 600 /root/.git-credentials; fix "Tightened /root/.git-credentials to mode 600"; note_fixed
+  else
+    bad "/root/.git-credentials is not mode 600"; note_unresolved
+  fi
+fi
+
 # ── 15. End-to-end verification ────────────────────────────────────────────
 head_ "End-to-end verification"
 [ "$CHECK_ONLY" = "no" ] && as_user "$FPM_USER" php artisan config:clear >/dev/null 2>&1

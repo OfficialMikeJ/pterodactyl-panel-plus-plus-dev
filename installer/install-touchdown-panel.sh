@@ -25,6 +25,8 @@ set -euo pipefail
 
 # ── Configuration (override via environment or answer the prompts) ────────
 GIT_REPO="${GIT_REPO:-}"                      # e.g. https://gitea.example.com/YourUser/touch-down-hosting-panel.git
+GIT_USERNAME="${GIT_USERNAME:-}"              # only needed for a PRIVATE repository
+GIT_TOKEN="${GIT_TOKEN:-}"                    # Gitea ACCESS TOKEN (read:repository) — never an account password
 CHANNEL="${CHANNEL:-}"                        # public (main branch, Alpha) | dev (dev branch, internal build)
 GIT_BRANCH="${GIT_BRANCH:-}"                  # derived from CHANNEL unless set explicitly
 AUTO_UPDATE="${AUTO_UPDATE:-}"                # yes/no — default: no (opt-in; both builds update manually)
@@ -118,8 +120,67 @@ prompt_admin_password() {
   done
 }
 
+# ── Private repository access ──────────────────────────────────────────────
+# Credentials are stored for root only, OUTSIDE the panel directory, so the
+# repository itself never contains them, `git remote -v` stays clean, and the
+# update script keeps working unattended.
+urlencode() {
+  local s="$1" i c out=""
+  for (( i=0; i<${#s}; i++ )); do
+    c="${s:i:1}"
+    case "$c" in
+      [a-zA-Z0-9.~_-]) out+="$c" ;;
+      *) out+="$(printf '%%%02X' "'$c")" ;;
+    esac
+  done
+  printf '%s' "$out"
+}
+
+repo_reachable() {
+  GIT_TERMINAL_PROMPT=0 git ls-remote "$GIT_REPO" HEAD >/dev/null 2>&1
+}
+
+setup_git_credentials() {
+  [ -n "$GIT_TOKEN" ] || return 0
+  local proto host
+  proto="${GIT_REPO%%://*}"
+  host="${GIT_REPO#*://}"; host="${host%%/*}"; host="${host##*@}"
+  install -m 600 /dev/null /root/.git-credentials
+  printf '%s://%s:%s@%s\n' "$proto" "$(urlencode "$GIT_USERNAME")" "$(urlencode "$GIT_TOKEN")" "$host" \
+    > /root/.git-credentials
+  chmod 600 /root/.git-credentials
+  git config --global credential.helper store
+  success "Repository credentials stored in /root/.git-credentials (mode 600, root only)"
+}
+
+prompt_repo_credentials() {
+  [ -n "$GIT_REPO" ] || return 0
+  repo_reachable && return 0
+
+  if [ -z "$GIT_TOKEN" ]; then
+    echo
+    log "That repository is not readable anonymously — it looks private."
+    echo "  In Gitea: Settings -> Applications -> Generate New Token"
+    echo "  Scope: read:repository (read-only is enough for a panel install)"
+    echo "  Use an ACCESS TOKEN, not your account password — it is stored on this"
+    echo "  server and reused unattended by the update script."
+    echo
+    [ -z "$GIT_USERNAME" ] && read -rp "Gitea username: " GIT_USERNAME
+    read -rsp "Gitea access token: " GIT_TOKEN; echo
+  fi
+
+  setup_git_credentials
+  if ! repo_reachable; then
+    error "Still cannot read ${GIT_REPO} with those credentials."
+    error "Check the username, the token, and that the token has read:repository scope."
+    exit 1
+  fi
+  success "Repository access confirmed"
+}
+
 prompt_config() {
   [ -z "$GIT_REPO" ] && read -rp "Git repository URL of your panel (Gitea): " GIT_REPO
+  prompt_repo_credentials
 
   if [ -z "$CHANNEL" ]; then
     echo "Which build channel is this server?"

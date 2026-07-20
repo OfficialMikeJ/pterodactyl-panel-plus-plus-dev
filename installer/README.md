@@ -30,12 +30,41 @@ credentials). You can also pre-answer via environment variables:
 
 ```bash
 GIT_REPO="https://YOUR-GITEA-HOST/YourUser/touch-down-hosting-panel.git" \
+GIT_USERNAME="YourGiteaUser" \
+GIT_TOKEN="gitea-access-token" \
 FQDN="panel.example.com" \
 ADMIN_EMAIL="you@example.com" \
 ADMIN_PASSWORD="********" \
 CONFIGURE_SSL="yes" \
 bash /tmp/tdh/installer/install-touchdown-panel.sh
 ```
+
+### Private repositories
+
+If the repository cannot be read anonymously, the installer says so and prompts
+for a **Gitea access token**:
+
+```
+In Gitea: Settings → Applications → Generate New Token
+Scope: read:repository   (read-only is enough for a panel install)
+```
+
+Use an **access token, never your account password** — it is stored on the
+server and reused unattended by the update script. A token is read-only,
+scoped to repositories, and can be revoked on its own without changing your
+login or affecting anything else.
+
+Credentials go to `/root/.git-credentials` (mode 600, root only), registered
+with git's `store` helper. They are deliberately kept **outside the panel
+directory**, so the repository, `git remote -v`, `.env` and anything
+web-accessible never contain them. The update script picks them up
+automatically, and the repair script verifies the remote is reachable.
+
+> Never hardcode credentials into these scripts. They live inside the
+> repository, so anything written here is published to everyone with repo
+> access — permanently, since git history retains it even after deletion.
+> An admin password would also hand over every repo and the Gitea instance
+> itself; a scoped read-only token cannot.
 
 What it sets up:
 
