@@ -229,7 +229,7 @@ prompt_config() {
   fi
 
   if [ "$CHANNEL" = "dev" ] && [ -z "$DEV_FEATURES_USERS" ]; then
-    default_dev_users="official.mikejtv@gmail.com,Kjaluellau@gmail.com"
+    default_dev_users="${ADMIN_EMAIL}"
     read -rp "Emails allowed to see dev features [${default_dev_users}]: " DEV_FEATURES_USERS
     DEV_FEATURES_USERS="${DEV_FEATURES_USERS:-$default_dev_users}"
   fi
