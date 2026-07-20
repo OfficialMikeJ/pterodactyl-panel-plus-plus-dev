@@ -19,6 +19,19 @@ export interface DevBlogPost {
 
 export const devBlogPosts: DevBlogPost[] = [
     {
+        id: 'node-fqdn-red-heart',
+        date: '2026-07-20',
+        title: 'Node Setup: Matching the FQDN to How You Actually Reach It',
+        type: 'news',
+        tags: ['nodes', 'wings', 'setup'],
+        paragraphs: [
+            'If a node shows a red heart while Wings is clearly running and healthy, the cause is almost always the node FQDN. The heartbeat check runs in your browser — not on the panel server — so the FQDN has to be an address your browser can actually reach, and it has to match how Wings is serving.',
+            "On a LAN with plain HTTP and no certificate, set the node FQDN to the machine's IP address (for example 192.168.2.26) and turn Communicate over SSL off. Wings listens on all interfaces regardless, so no change to config.yml is needed.",
+            'Once the panel is behind a reverse proxy such as Nginx Proxy Manager with a real certificate, switch the node to node.example.com (replacing example.com with your own domain) and turn SSL on. That domain must resolve to the node machine — a domain pointing at your public IP will be forwarded by your router to whichever box owns ports 80 and 443, which may not be the node at all.',
+            'One trap worth knowing: browsers block a secure page from calling a plain-HTTP node. When the panel moves to HTTPS, the node has to move with it, otherwise a previously working IP-based node goes red.',
+        ],
+    },
+    {
         id: 'welcome-to-touch-down-hosting',
         date: '2026-07-03',
         title: 'Welcome to Touch Down Hosting!',

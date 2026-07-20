@@ -153,5 +153,44 @@ avoids the situation entirely.
 
 ## Wings
 
-Wings is **unmodified** in this fork — install it on your game nodes with the
-official installer: <https://pterodactyl-installer.se>
+Wings is **unmodified** in this fork — this installer does **not** install it.
+Install it on your game nodes with the official installer:
+
+```bash
+bash <(curl -s https://pterodactyl-installer.se)     # choose "Install Wings"
+```
+
+That creates `/etc/pterodactyl`, installs Docker and the systemd unit. Then in
+the panel: **Admin → Nodes → Create New**, and copy the YAML from the node's
+**Configuration** tab into `/etc/pterodactyl/config.yml`.
+
+### Node FQDN — the #1 cause of a red heart
+
+The node's heartbeat check runs **in your browser**, not on the panel server.
+So the node's **FQDN must be an address your browser can reach**, and it must
+match how Wings is actually serving.
+
+| Setup | Node FQDN | Communicate over SSL |
+| --- | --- | --- |
+| LAN / plain HTTP (no certificate) | the machine's **IP**, e.g. `192.168.2.26` | **false** |
+| Public / behind a reverse proxy with TLS | `node.example.com` (must resolve to that machine) | **true** |
+
+Symptoms of getting this wrong: Wings runs fine, its log shows
+`fetching list of servers from API` succeeding, `systemctl status wings` is
+active — but the panel still shows a **red heart**. That combination always
+means the browser cannot reach the FQDN, not that Wings is broken.
+
+Two specific traps:
+
+- **A domain that resolves to your public IP** while Wings is on a LAN machine.
+  Your router forwards that IP to whichever box owns ports 80/443 — often a
+  different machine entirely — so the browser never reaches Wings. Use the LAN
+  IP, or add a local DNS record pointing the domain at the LAN address.
+- **Mixed content.** Once the panel is served over HTTPS (e.g. through Nginx
+  Proxy Manager), browsers block it from calling a plain-HTTP node. At that
+  point Wings needs its own certificate and the node must use SSL — an IP-based
+  node stops working. Move the panel and the node to TLS together.
+
+Wings' own ports (`8080` API, `2022` SFTP) and your game ports must be open on
+the node's firewall. They do **not** route through the panel's nginx or a
+reverse proxy.
