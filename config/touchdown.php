@@ -13,7 +13,10 @@ return [
     |            installer/update scripts.
     |
     */
-    'version' => env('TDH_VERSION', '1.0.0-alpha'),
+    // The version describes the CODE, so it is defined here rather than in
+    // .env — otherwise a server that was installed at an older version keeps
+    // reporting it forever, since updates never rewrite that variable.
+    'version' => '1.1.0-alpha',
     'channel' => env('TDH_CHANNEL', 'public'),
     'build' => env('TDH_BUILD', 'local'),
 

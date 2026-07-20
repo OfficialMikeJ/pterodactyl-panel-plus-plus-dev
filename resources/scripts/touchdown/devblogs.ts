@@ -19,6 +19,19 @@ export interface DevBlogPost {
 
 export const devBlogPosts: DevBlogPost[] = [
     {
+        id: 'v1-1-0-alpha',
+        date: '2026-07-20',
+        title: 'v1.1.0-alpha — Meme Trophies, Theme Menu Fix',
+        type: 'feature',
+        tags: ['release', 'trophies', 'themes'],
+        paragraphs: [
+            'Version 1.1.0-alpha is out. The headline addition: eleven new trophies, because fifty was clearly not enough.',
+            "Five of them are for deleting servers of specific games — Arma'd By the Best, Squad'd RPG, Door Camper DB, Mine'd to Death, and ICARUS Made Me Do It. The other six reward questionable dedication: Sir Clicksalot for opening server files ten times, MrServerbosti for setting up ten servers, 50 Servers or Die Trying, DaServersBaby for a hundred, The si6x is Back for deploying into a Toronto datacenter, and 2 Hard 4 the Servers for fully wiring up the payment system.",
+            'Making those work meant teaching the panel to record things it never logged before — server deletions (including which game), server installs (including which datacenter), and payment configuration. All of that logging is fail-safe: a trophy can never interrupt a deletion, an install, or a settings save.',
+            'Also fixed: the theme picker in the navigation bar opened but showed nothing. The glass effect on the navigation bar was quietly clipping the menu out of existence. It now renders above everything, closes on Escape, and the palette button toggles it properly.',
+        ],
+    },
+    {
         id: 'node-fqdn-red-heart',
         date: '2026-07-20',
         title: 'Node Setup: Matching the FQDN to How You Actually Reach It',

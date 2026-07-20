@@ -37,7 +37,13 @@ export const roadmap: RoadmapItem[] = [
     },
     {
         title: 'More trophies (51+)',
-        description: 'A new wave of trophies, including seasonal and event-based unlocks.',
+        description:
+            'Eleven new trophies for game-specific server deletions, install milestones, datacenter deployments and payment setup — 61 in total.',
+        status: 'done',
+    },
+    {
+        title: 'Seasonal & event trophies',
+        description: 'Limited-time trophies tied to holidays, launches and community events.',
         status: 'planned',
     },
     {
