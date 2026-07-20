@@ -82,6 +82,16 @@ export default createGlobalStyle`
         color: #fff;
     }
 
+    /*
+     * Google's invisible reCAPTCHA parks a floating badge over the bottom-right
+     * of the viewport, which collides with the login card and the trophy toasts.
+     * Hiding it is permitted as long as the reCAPTCHA branding appears in the
+     * user flow — the attribution line under the login form provides that.
+     */
+    .grecaptcha-badge {
+        visibility: hidden !important;
+    }
+
     /* Reusable Touch Down Hosting glass morphism surface. */
     .tdh-glass {
         background: var(--tdh-surface);

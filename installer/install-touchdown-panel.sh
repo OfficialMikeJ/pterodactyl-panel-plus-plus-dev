@@ -143,6 +143,19 @@ prompt_config() {
   [ -z "$AUTO_UPDATE" ] && AUTO_UPDATE="no"
 
   [ -z "$FQDN" ] && read -rp "Panel domain / FQDN (e.g. panel.example.com): " FQDN
+
+  # Let's Encrypt cannot issue certificates for a bare IP address, so an IP
+  # install is always plain HTTP. Getting this wrong makes Pterodactyl mark the
+  # session cookie Secure, which is never sent over HTTP — login then fails
+  # with "CSRF token mismatch." Must run AFTER the FQDN is known.
+  if [[ "$FQDN" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+    if [ "$CONFIGURE_SSL" = "yes" ]; then
+      log "FQDN is a bare IP address — disabling Let's Encrypt (certificates require a domain)."
+    fi
+    CONFIGURE_SSL="no"
+  fi
+  [ "$CONFIGURE_SSL" = "yes" ] && APP_SCHEME="https" || APP_SCHEME="http"
+
   [ -z "$ADMIN_EMAIL" ] && read -rp "Admin account email: " ADMIN_EMAIL
   if [ -z "$ADMIN_PASSWORD" ]; then
     prompt_admin_password
@@ -169,7 +182,7 @@ prompt_config() {
   log "Installing from:  $GIT_REPO ($GIT_BRANCH)"
   log "Build channel:    $CHANNEL (auto-update: $AUTO_UPDATE)"
   log "Install path:     $PANEL_DIR"
-  log "Panel URL:        https://$FQDN"
+  log "Panel URL:        ${APP_SCHEME}://$FQDN"
   log "Database:         $DB_NAME (user: $DB_USER)"
   log "Let's Encrypt:    $CONFIGURE_SSL"
   [ "$CHANNEL" = "dev" ] && log "Dev feature users: $DEV_FEATURES_USERS"
@@ -274,9 +287,13 @@ configure_panel() {
   fi
   success "Application encryption key generated"
 
+  # The scheme must match reality: Pterodactyl sets SESSION_SECURE_COOKIE=true
+  # whenever APP_URL starts with https, and a Secure cookie is never sent over
+  # plain HTTP — every request then gets a fresh session and login fails with
+  # "CSRF token mismatch."
   php artisan p:environment:setup \
     --author="$ADMIN_EMAIL" \
-    --url="https://${FQDN}" \
+    --url="${APP_SCHEME}://${FQDN}" \
     --timezone="$TIMEZONE" \
     --cache="redis" \
     --session="redis" \
@@ -484,7 +501,7 @@ summary() {
   echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
   echo -e "${WHITE}  Touch Down Hosting panel installed successfully!${RESET}"
   echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
-  echo -e "  Panel URL:      ${WHITE}https://${FQDN}${RESET}"
+  echo -e "  Panel URL:      ${WHITE}${APP_SCHEME}://${FQDN}${RESET}"
   echo -e "  Build channel:  ${WHITE}${CHANNEL} (${GIT_BRANCH} branch, auto-update: ${AUTO_UPDATE})${RESET}"
   echo -e "  Admin login:    ${WHITE}${ADMIN_USERNAME} / ${ADMIN_EMAIL}${RESET}"
   echo -e "  Install path:   ${WHITE}${PANEL_DIR}${RESET}"

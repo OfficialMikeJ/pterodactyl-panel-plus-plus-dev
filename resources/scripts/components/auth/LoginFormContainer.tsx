@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { Form } from 'formik';
+import { useStoreState } from 'easy-peasy';
 import styled from 'styled-components/macro';
 import { breakpoint } from '@/theme';
 import FlashMessageRender from '@/components/FlashMessageRender';
@@ -39,6 +40,43 @@ const GlassCard = styled.div`
     box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5), 0 0 32px var(--tdh-glow);
 `;
 
+/**
+ * Required attribution when the floating reCAPTCHA badge is hidden (see the
+ * .grecaptcha-badge rule in GlobalStylesheet). Only rendered when reCAPTCHA
+ * is actually enabled for this panel.
+ */
+const RecaptchaNotice = () => {
+    const enabled = useStoreState((state) => state.settings.data?.recaptcha?.enabled);
+
+    if (!enabled) return null;
+
+    return (
+        <p css={tw`text-center mt-4`} style={{ color: 'var(--tdh-text-muted)', fontSize: '0.6875rem' }}>
+            Protected by reCAPTCHA &mdash; Google{' '}
+            <a
+                href={'https://policies.google.com/privacy'}
+                target={'_blank'}
+                rel={'noopener noreferrer'}
+                css={tw`no-underline`}
+                style={{ color: 'var(--tdh-text-muted)', textDecoration: 'underline' }}
+            >
+                Privacy Policy
+            </a>{' '}
+            and{' '}
+            <a
+                href={'https://policies.google.com/terms'}
+                target={'_blank'}
+                rel={'noopener noreferrer'}
+                css={tw`no-underline`}
+                style={{ color: 'var(--tdh-text-muted)', textDecoration: 'underline' }}
+            >
+                Terms of Service
+            </a>{' '}
+            apply.
+        </p>
+    );
+};
+
 export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => (
     <Container>
         {title && (
@@ -61,6 +99,7 @@ export default forwardRef<HTMLFormElement, Props>(({ title, ...props }, ref) => 
             Having trouble logging in? Join our Discord and we&apos;ll help you out.
         </p>
         <DiscordButton css={tw`mt-3`} />
+        <RecaptchaNotice />
         <p css={tw`text-center text-xs mt-4`} style={{ color: 'var(--tdh-text-muted)' }}>
             &copy; {new Date().getFullYear()} <span style={{ color: 'var(--tdh-brand-400)' }}>Touch Down Hosting</span>
             &nbsp;&mdash; All rights reserved.

@@ -404,6 +404,28 @@ else
   fi
 fi
 
+# SESSION_SECURE_COOKIE must agree with the APP_URL scheme. Pterodactyl sets it
+# to true whenever APP_URL is https; if the panel is then served over plain
+# HTTP the browser never returns the Secure session cookie, so every request
+# starts a new session and login fails with "CSRF token mismatch."
+secure_cookie_ok() {
+  local url secure
+  url="$(env_get APP_URL)"; secure="$(env_get SESSION_SECURE_COOKIE)"
+  case "$url" in
+    https://*) return 0 ;;                       # https: either setting is fine
+    *) case "$secure" in true|"1"|on) return 1 ;; *) return 0 ;; esac ;;
+  esac
+}
+repair_secure_cookie() {
+  env_set SESSION_SECURE_COOKIE "false" || return 1
+  rm -f bootstrap/cache/config.php
+  detail "SESSION_SECURE_COOKIE was true while APP_URL is $(env_get APP_URL)."
+  detail "A Secure cookie is never sent over plain HTTP, so the session was lost on"
+  detail "every request and login failed with 'CSRF token mismatch.' — now false."
+  return 0
+}
+repair_step "Session cookie security matches the APP_URL scheme" secure_cookie_ok repair_secure_cookie
+
 awk -F= '/^[A-Z_]+=/{if(seen[$1]++) print "         DUPLICATE .env key: "$1}' .env 2>/dev/null
 grep -q $'\r' .env 2>/dev/null && warn ".env has CRLF line endings — values will carry a trailing carriage return"
 
