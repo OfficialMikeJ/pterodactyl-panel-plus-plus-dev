@@ -46,6 +46,9 @@ bash /tmp/tdh/installer/install-touchdown-panel.sh
 
 The installer handles PHP 8.3, MariaDB, Redis, nginx, Node.js 22 asset builds, Let's Encrypt, the queue worker and cron. Updating is one command: `bash installer/update-touchdown-panel.sh`.
 
+**Prefer containers?** A full Docker / Docker Compose install (panel + MariaDB +
+Redis, image built from your clone) is documented in [DOCKER.md](DOCKER.md).
+
 Wings (the game server daemon) is unmodified in this fork — install it with the official tooling: <https://pterodactyl-installer.se>
 
 ## Customizing

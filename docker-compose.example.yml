@@ -11,6 +11,10 @@ x-common:
     # A list of valid timezones can be found here: http://php.net/manual/en/timezones.php
     APP_TIMEZONE: "UTC"
     APP_SERVICE_AUTHOR: "noreply@example.com"
+    # Touch Down Hosting build identity: "public" or "dev".
+    TDH_CHANNEL: "public"
+    # Dev builds only — comma-separated emails allowed to see dev-only features:
+    # DEV_FEATURES_USERS: "you@example.com,friend@example.com"
     # Uncomment the line below and set to a non-empty value if you want to use Let's Encrypt
     # to generate an SSL certificate for the Panel.
     # LE_EMAIL: ""
@@ -46,7 +50,11 @@ services:
     image: redis:alpine
     restart: always
   panel:
-    image: ghcr.io/pterodactyl/panel:latest
+    # Touch Down Hosting is a source-only fork — the image is built from THIS
+    # checkout, so the branch you cloned (main = public, dev = internal) is the
+    # build you get. There is no prebuilt upstream image for this panel.
+    build: .
+    image: touchdownhosting/panel:local
     restart: always
     ports:
       - "80:80"
@@ -59,6 +67,11 @@ services:
       - "/srv/pterodactyl/nginx/:/etc/nginx/http.d/"
       - "/srv/pterodactyl/certs/:/etc/letsencrypt/"
       - "/srv/pterodactyl/logs/:/app/storage/logs"
+      # Optional: your own logo without rebuilding the image (single file, safe):
+      # - "./my-logo.png:/app/public/logo.png:ro"
+      # Optional: drop-in custom themes. COPY THE FOUR BUILT-IN THEME JSONS into
+      # the host folder first — mounting an empty folder hides the defaults:
+      # - "/srv/pterodactyl/themes/:/app/public/themes/"
     environment:
       <<: [*panel-environment, *mail-environment]
       DB_PASSWORD: *db-password

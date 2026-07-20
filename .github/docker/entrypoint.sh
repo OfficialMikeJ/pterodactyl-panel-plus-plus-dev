@@ -88,8 +88,15 @@ do
 done
 
 ## make sure the db is set up
-echo -e "Migrating and Seeding D.B"
-php artisan migrate --seed --force
+## Seed only once: the seeder re-imports the stock eggs, which would overwrite
+## any admin egg customisations on every container restart. Migrations always run.
+if [ ! -f /app/var/.seeded ]; then
+  echo -e "First start: migrating and seeding D.B"
+  php artisan migrate --seed --force && touch /app/var/.seeded
+else
+  echo -e "Migrating D.B (seeding already done; delete /app/var/.seeded to re-seed)"
+  php artisan migrate --force
+fi
 
 ## start cronjobs for the queue
 echo -e "Starting cron jobs."
