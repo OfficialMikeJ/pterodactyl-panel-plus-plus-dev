@@ -46,11 +46,19 @@ fi
 cd "$PANEL_DIR"
 
 # ── Discover the php-fpm pool user and PHP version (never assume) ──────────
-PHP_VER="$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || true)"
+# Prefer the panel's pinned PHP 8.3: on hosts that carry another PHP for
+# other projects, plain `php` can resolve to a different version (e.g.
+# Debian 13's 8.4), and composer under that PHP rejects the lock file.
+if [ -z "${PHP:-}" ]; then
+  for cand in /usr/bin/php8.3 /usr/bin/php8.2 php; do
+    command -v "$cand" >/dev/null 2>&1 && { PHP="$cand"; break; }
+  done
+  PHP="${PHP:-php}"
+fi
+PHP_VER="$("$PHP" -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || true)"
 FPM_USER="$(awk -F= '/^[[:space:]]*user[[:space:]]*=/{gsub(/[[:space:]]/,"",$2);print $2;exit}' \
     "/etc/php/${PHP_VER}/fpm/pool.d/www.conf" 2>/dev/null || true)"
 FPM_USER="${FPM_USER:-www-data}"
-PHP="${PHP:-php}"
 
 # ── Branch: follow the branch this install is ALREADY on ──────────────────
 # Defaulting to "main" would silently downgrade a dev-channel panel to the
@@ -85,7 +93,7 @@ git checkout "$GIT_BRANCH"
 git pull origin "$GIT_BRANCH"
 
 echo "[Touch Down] Updating PHP dependencies..."
-COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --quiet
+COMPOSER_ALLOW_SUPERUSER=1 "$PHP" "$(command -v composer || echo /usr/local/bin/composer)" install --no-dev --optimize-autoloader --no-interaction --quiet
 
 echo "[Touch Down] Rebuilding frontend assets..."
 # build:production deletes the existing bundles first, so keep a copy — a failed
