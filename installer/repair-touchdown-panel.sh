@@ -878,6 +878,10 @@ repair_step "Runtime directories are writable by ${FPM_USER}" perms_ok repair_pe
 
 # ── 14b. Repository access (needed for updates, not for serving) ──────────
 head_ "Repository access"
+# www-data owns the tree, this script runs as root — register it as safe or
+# every git command fails with "dubious ownership".
+git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$PANEL_DIR" \
+  || git config --global --add safe.directory "$PANEL_DIR"
 GIT_REMOTE="$(git -C "$PANEL_DIR" remote get-url origin 2>/dev/null)"
 if [ -z "$GIT_REMOTE" ]; then
   warn "No git remote configured — installer/update-touchdown-panel.sh cannot pull updates"

@@ -45,6 +45,13 @@ fi
 
 cd "$PANEL_DIR"
 
+# The panel tree is owned by www-data while this script runs as root — git's
+# dubious-ownership protection (safe.directory, git >= 2.35.2) then makes
+# every git command fail, which surfaces as "Cannot determine the current
+# branch." Registering the directory as safe is required, not optional.
+git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$PANEL_DIR" \
+  || git config --global --add safe.directory "$PANEL_DIR"
+
 # ── Discover the php-fpm pool user and PHP version (never assume) ──────────
 # Prefer the panel's pinned PHP 8.3: on hosts that carry another PHP for
 # other projects, plain `php` can resolve to a different version (e.g.
