@@ -118,6 +118,12 @@ Pulls the latest code from the server's branch, reinstalls dependencies,
 rebuilds assets, migrates the database, re-stamps the build hash and restarts
 the queue worker (with maintenance mode around it).
 
+If Wings is installed on the same host, the update script also refreshes it
+to the latest upstream release and restarts the daemon (game servers keep
+running through a Wings restart — they're containers). Pass `--skip-wings`
+to leave Wings alone. Wings-only nodes have no update script; re-running the
+installer's Wings option refreshes the binary the same way.
+
 Scheduled auto-update is **disabled by default** for both channels. To opt a
 server into a nightly automatic update, install with `AUTO_UPDATE=yes` — that
 creates a `touchdown-update.timer` systemd unit (check it with
