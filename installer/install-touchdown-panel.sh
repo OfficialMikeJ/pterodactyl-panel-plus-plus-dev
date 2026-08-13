@@ -33,6 +33,7 @@ AUTO_UPDATE="${AUTO_UPDATE:-}"                # yes/no — default: no (opt-in; 
 DEV_FEATURES_USERS="${DEV_FEATURES_USERS:-}"  # comma-separated emails (dev channel only)
 PANEL_DIR="${PANEL_DIR:-/var/www/touchdown}"
 FQDN="${FQDN:-}"                              # e.g. panel.touchdownhosting.com
+PANEL_PORT="${PANEL_PORT:-80}"                # nginx port for the panel; prompts for a free one if taken (e.g. OMV web UI on 80)
 TIMEZONE="${TIMEZONE:-America/Chicago}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-}"
 ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
@@ -219,6 +220,42 @@ prompt_config() {
   fi
   [ "$CONFIGURE_SSL" = "yes" ] && APP_SCHEME="https" || APP_SCHEME="http"
 
+  # ── Panel web port ──
+  # Another web UI may already own the port — OpenMediaVault's admin UI, for
+  # example, is served by nginx on 80. Only the panel's own vhost may hold
+  # the chosen port; anything else triggers a prompt for a free one.
+  port_taken() { [ -n "$(ss -ltnH "sport = :$1" 2>/dev/null)" ]; }
+  panel_owns_port() {
+    [ -f /etc/nginx/sites-enabled/touchdown.conf ] \
+      && grep -Eq "^[[:space:]]*listen[[:space:]]+$1;" /etc/nginx/sites-enabled/touchdown.conf
+  }
+  # Re-runs: keep the port an existing panel vhost already uses.
+  if [ "$PANEL_PORT" = "80" ] && [ -f /etc/nginx/sites-available/touchdown.conf ]; then
+    existing_port="$(sed -n 's/^[[:space:]]*listen[[:space:]]\{1,\}\([0-9]\{1,\}\);.*/\1/p' /etc/nginx/sites-available/touchdown.conf | head -n1)"
+    [ -n "$existing_port" ] && PANEL_PORT="$existing_port"
+  fi
+  if port_taken "$PANEL_PORT" && ! panel_owns_port "$PANEL_PORT"; then
+    suggested=8081
+    while port_taken "$suggested"; do suggested=$((suggested + 1)); done
+    log "Port ${PANEL_PORT} is already in use by another service (e.g. the OMV web UI)."
+    read -rp "Port for the panel's web server [${suggested}]: " panel_port_answer
+    PANEL_PORT="${panel_port_answer:-$suggested}"
+  fi
+
+  # Let's Encrypt needs ports 80/443; a custom-port install sits behind a
+  # reverse proxy that terminates TLS itself.
+  if [ "$PANEL_PORT" != "80" ] && [ "$CONFIGURE_SSL" = "yes" ]; then
+    log "Custom panel port ${PANEL_PORT}: skipping Let's Encrypt — terminate TLS at your reverse proxy instead."
+    CONFIGURE_SSL="no"
+    APP_SCHEME="http"
+  fi
+
+  # The URL users (and the session cookie) see — default ports stay implicit.
+  APP_URL="${APP_SCHEME}://${FQDN}"
+  if [ "$APP_SCHEME" = "http" ] && [ "$PANEL_PORT" != "80" ]; then
+    APP_URL="${APP_URL}:${PANEL_PORT}"
+  fi
+
   [ -z "$ADMIN_EMAIL" ] && read -rp "Admin account email: " ADMIN_EMAIL
   if [ -z "$ADMIN_PASSWORD" ]; then
     prompt_admin_password
@@ -244,7 +281,7 @@ prompt_config() {
   log "Installing from:  $GIT_REPO ($GIT_BRANCH)"
   log "Build channel:    $CHANNEL (auto-update: $AUTO_UPDATE)"
   log "Install path:     $PANEL_DIR"
-  log "Panel URL:        ${APP_SCHEME}://$FQDN"
+  log "Panel URL:        ${APP_URL}"
   log "Database:         $DB_NAME (user: $DB_USER)"
   log "Let's Encrypt:    $CONFIGURE_SSL"
   [ "$CHANNEL" = "dev" ] && log "Dev feature users: $DEV_FEATURES_USERS"
@@ -404,7 +441,7 @@ configure_panel() {
   # "CSRF token mismatch."
   "$PHP_BIN" artisan p:environment:setup \
     --author="$ADMIN_EMAIL" \
-    --url="${APP_SCHEME}://${FQDN}" \
+    --url="${APP_URL}" \
     --timezone="$TIMEZONE" \
     --cache="redis" \
     --session="redis" \
@@ -512,7 +549,7 @@ EOF
 
   cat > /etc/nginx/sites-available/touchdown.conf <<EOF
 server {
-    listen 80;
+    listen ${PANEL_PORT};
     server_name ${FQDN};
 
     root ${PANEL_DIR}/public;
@@ -552,7 +589,9 @@ server {
 }
 EOF
   ln -sf /etc/nginx/sites-available/touchdown.conf /etc/nginx/sites-enabled/touchdown.conf
-  nginx -t && systemctl restart nginx
+  # Reload, not restart: nginx may also be serving another web UI on this
+  # host (e.g. OpenMediaVault) — a reload adds our site with zero downtime.
+  nginx -t && { systemctl reload nginx || systemctl restart nginx; }
 
   if [ "$CONFIGURE_SSL" = "yes" ]; then
     log "Requesting Let's Encrypt certificate for ${FQDN}..."
@@ -608,7 +647,7 @@ summary() {
   echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
   echo -e "${WHITE}  Touch Down Hosting panel installed successfully!${RESET}"
   echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
-  echo -e "  Panel URL:      ${WHITE}${APP_SCHEME}://${FQDN}${RESET}"
+  echo -e "  Panel URL:      ${WHITE}${APP_URL}${RESET}"
   echo -e "  Build channel:  ${WHITE}${CHANNEL} (${GIT_BRANCH} branch, auto-update: ${AUTO_UPDATE})${RESET}"
   echo -e "  Admin login:    ${WHITE}${ADMIN_USERNAME} / ${ADMIN_EMAIL}${RESET}"
   echo -e "  Install path:   ${WHITE}${PANEL_DIR}${RESET}"
