@@ -23,12 +23,13 @@ trap 'rc=$?; echo -e "\033[0;31m[ERROR ]\033[0m Installer failed at line ${LINEN
 #  this fork's repository is source-only — so this script also installs    #
 #  Node.js 22 + Yarn and builds the frontend assets on the server.         #
 #                                                                           #
-#  NOTE: This installs the PANEL only. Wings is unmodified in this fork —  #
-#  use the official installer for Wings: https://pterodactyl-installer.se  #
+#  Installs the panel, Wings (game-node daemon), or both — you choose at    #
+#  the first prompt. Wings itself is unmodified upstream in this fork.      #
 #                                                                           #
 #############################################################################
 
 # ── Configuration (override via environment or answer the prompts) ────────
+INSTALL_TARGET="${INSTALL_TARGET:-}"          # panel | wings | both — prompted if unset
 GIT_REPO="${GIT_REPO:-https://github.com/OfficialMikeJ/pterodactyl-panel-plus-plus-dev.git}"
 GIT_USERNAME="${GIT_USERNAME:-}"              # only needed for a PRIVATE repository
 GIT_TOKEN="${GIT_TOKEN:-}"                    # git ACCESS TOKEN (repo read) — never an account password
@@ -660,6 +661,88 @@ EOF
   success "Auto-update timer active (nightly at ~04:30 server time)"
 }
 
+# ── Wings (game node daemon — unmodified upstream) ─────────────────────────
+install_wings() {
+  log "Installing Wings (game server daemon)..."
+
+  # Docker is required to run game servers. An existing Docker install is
+  # left completely alone — critical on hosts already running containers.
+  if command -v docker >/dev/null 2>&1; then
+    success "Docker already installed — leaving it untouched"
+  else
+    log "Installing Docker via get.docker.com..."
+    curl -fsSL https://get.docker.com | sh
+  fi
+  systemctl enable --now docker
+
+  local arch
+  case "$(uname -m)" in
+    x86_64)  arch="amd64" ;;
+    aarch64) arch="arm64" ;;
+    *) error "Unsupported architecture for Wings: $(uname -m)"; exit 1 ;;
+  esac
+
+  mkdir -p /etc/pterodactyl
+  curl -sSL -o /usr/local/bin/wings \
+    "https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_${arch}"
+  chmod u+x /usr/local/bin/wings
+
+  cat > /etc/systemd/system/wings.service <<'EOF'
+[Unit]
+Description=Pterodactyl Wings Daemon
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+User=root
+WorkingDirectory=/etc/pterodactyl
+LimitNOFILE=4096
+PIDFile=/var/run/wings/daemon.pid
+ExecStart=/usr/local/bin/wings
+Restart=on-failure
+StartLimitInterval=180
+StartLimitBurst=30
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable wings >/dev/null 2>&1 || true
+  success "Wings $(/usr/local/bin/wings version 2>/dev/null | head -n1 || echo installed) — not started yet (it needs its config from the panel first)"
+}
+
+wings_summary() {
+  echo
+  echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
+  echo -e "${WHITE}  Wings installed — final steps happen in the panel:${RESET}"
+  echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
+  echo -e "   1. Admin area -> Nodes -> Create New. For a LAN node set the FQDN"
+  echo -e "      to this machine's IP address and 'Communicate Over SSL' OFF —"
+  echo -e "      a domain that resolves to your public IP/proxy shows a red"
+  echo -e "      heart even when Wings is healthy."
+  echo -e "   2. Open the node's Configuration tab and run its auto-deploy"
+  echo -e "      command on THIS machine."
+  echo -e "   3. Start the daemon:  systemctl start wings"
+  echo
+}
+
+prompt_install_target() {
+  if [ -z "$INSTALL_TARGET" ]; then
+    echo "What should this machine run?"
+    echo "  1) Panel         — the Touch Down Hosting web panel"
+    echo "  2) Wings         — game-node daemon (unmodified upstream)"
+    echo "  3) Panel + Wings — all-in-one host"
+    read -rp "Selection [1]: " target_choice
+    case "${target_choice:-1}" in
+      2) INSTALL_TARGET="wings" ;;
+      3) INSTALL_TARGET="both" ;;
+      *) INSTALL_TARGET="panel" ;;
+    esac
+  fi
+}
+
 summary() {
   echo
   echo -e "${ORANGE}══════════════════════════════════════════════════════════════${RESET}"
@@ -673,8 +756,8 @@ summary() {
   echo
   echo -e "  Next steps:"
   echo -e "   1. Log in and check the pulsating-logo login flow + Cool Orange theme."
-  echo -e "   2. Install Wings on your game nodes (unmodified — use the official"
-  echo -e "      installer: https://pterodactyl-installer.se)."
+  echo -e "   2. For each game node, run this installer on that machine and"
+  echo -e "      choose option 2 (Wings)."
   echo -e "   3. Add custom themes any time: drop .json files in ${PANEL_DIR}/public/themes/"
   echo -e "   4. Publish Dev-Blog posts by editing resources/scripts/touchdown/devblogs.ts"
   echo -e "      in your repo, then: git pull && yarn build:production (in ${PANEL_DIR})"
@@ -703,6 +786,14 @@ guard_existing_install() {
 banner
 require_root
 detect_os
+prompt_install_target
+
+if [ "$INSTALL_TARGET" = "wings" ]; then
+  install_wings
+  wings_summary
+  exit 0
+fi
+
 guard_existing_install
 prompt_config
 install_dependencies
@@ -711,4 +802,10 @@ install_panel
 configure_panel
 setup_services
 setup_auto_update
+if [ "$INSTALL_TARGET" = "both" ]; then
+  install_wings
+fi
 summary
+if [ "$INSTALL_TARGET" = "both" ]; then
+  wings_summary
+fi
