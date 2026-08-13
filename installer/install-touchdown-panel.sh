@@ -424,17 +424,22 @@ configure_panel() {
   cd "$PANEL_DIR"
   log "Configuring environment..."
 
-  "$PHP_BIN" artisan key:generate --force
+  # NEVER regenerate an existing APP_KEY: everything encrypted with it
+  # (2FA secrets, billing keys, SMB credentials) becomes unreadable.
+  if grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
+    log "Existing APP_KEY found — keeping it."
+  else
+    "$PHP_BIN" artisan key:generate --force
 
-  # Hard-verify the encryption key actually landed in .env — everything
-  # downstream (sessions, encrypted billing keys, SMB credentials) depends on
-  # it, and a silent failure here surfaces later as the confusing
-  # "No application encryption key has been specified." error.
-  if ! grep -q '^APP_KEY=base64:' .env; then
-    error "APP_KEY was not written to .env — 'php artisan key:generate' failed. Aborting."
-    exit 1
+    # Hard-verify the encryption key actually landed in .env — everything
+    # downstream depends on it, and a silent failure here surfaces later as
+    # the confusing "No application encryption key has been specified." error.
+    if ! grep -q '^APP_KEY=base64:' .env; then
+      error "APP_KEY was not written to .env — 'php artisan key:generate' failed. Aborting."
+      exit 1
+    fi
+    success "Application encryption key generated"
   fi
-  success "Application encryption key generated"
 
   # The scheme must match reality: Pterodactyl sets SESSION_SECURE_COOKIE=true
   # whenever APP_URL starts with https, and a Secure cookie is never sent over
@@ -664,10 +669,29 @@ summary() {
   echo
 }
 
+# A COMPLETED install (APP_KEY present in .env) must be updated with the
+# update script, not reinstalled — this installer exists for fresh installs
+# and for resuming one that failed part-way. Guarding here protects a live
+# panel from an accidental re-install.
+guard_existing_install() {
+  grep -q '^APP_KEY=base64:' "${PANEL_DIR}/.env" 2>/dev/null || return 0
+  echo
+  log "An existing panel installation was detected at ${PANEL_DIR}."
+  echo "  To UPDATE it, use the update script instead:"
+  echo "      sudo bash ${PANEL_DIR}/installer/update-touchdown-panel.sh"
+  echo "  Only continue if you know this install is broken and want to repair"
+  echo "  it in place. Your database, .env and encryption key are preserved"
+  echo "  either way — but updating is the right tool for a working panel."
+  echo
+  read -rp "Continue with the installer anyway? [y/N] " goon
+  [[ "$goon" =~ ^[Yy]$ ]] || { log "Aborted — nothing was changed."; exit 0; }
+}
+
 # ── Main ───────────────────────────────────────────────────────────────────
 banner
 require_root
 detect_os
+guard_existing_install
 prompt_config
 install_dependencies
 setup_database
