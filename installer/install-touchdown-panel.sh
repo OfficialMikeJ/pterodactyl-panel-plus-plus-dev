@@ -1,5 +1,10 @@
 #!/bin/bash
-set -euo pipefail
+set -Eeuo pipefail
+
+# Loud failures: under plain set -e a failing command can abort the script
+# with no output at all (the cron pipeline did exactly that). This trap makes
+# every fatal error name the line and command that caused it.
+trap 'rc=$?; echo -e "\033[0;31m[ERROR ]\033[0m Installer failed at line ${LINENO}: ${BASH_COMMAND} (exit ${rc})" >&2' ERR
 
 #############################################################################
 #                                                                           #
@@ -530,7 +535,11 @@ setup_services() {
   resolve_php_bin
 
   # Never sort a crontab — environment assignments (PATH, MAILTO) are positional.
-  { crontab -u www-data -l 2>/dev/null | grep -v 'artisan schedule:run'
+  # Read the existing crontab OUTSIDE the pipeline: when the user has no
+  # crontab yet the read exits 1, and under set -e/pipefail that aborted the
+  # whole installer right here — silently.
+  existing_cron="$(crontab -u www-data -l 2>/dev/null || true)"
+  { printf '%s\n' "$existing_cron" | grep -v 'artisan schedule:run' || true
     echo "* * * * * ${PHP_BIN} ${PANEL_DIR}/artisan schedule:run >> /dev/null 2>&1"
   } | grep -v '^$' | crontab -u www-data -
 
