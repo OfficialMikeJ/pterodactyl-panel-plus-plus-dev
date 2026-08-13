@@ -13,7 +13,13 @@ server with Node.js 22 + Yarn.
 ## Supported systems
 
 - Ubuntu 22.04 / 24.04
-- Debian 11 / 12
+- Debian 11 / 12 / 13
+
+> Debian 13 (Trixie) note: Trixie ships PHP 8.4 in its own repositories, which
+> this panel does not support (it requires PHP 8.2/8.3). The installer already
+> handles this — on every Debian version it installs PHP 8.3 from the
+> [Sury](https://packages.sury.org/php/) repository, which publishes a Trixie
+> distribution, so no manual steps are needed.
 
 ## Fresh install
 

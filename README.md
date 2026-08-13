@@ -37,7 +37,7 @@ The version badge in the panel's navigation bar shows the active channel and bui
 
 ## Installation
 
-Automated installers for Ubuntu 22.04/24.04 and Debian 11/12 live in [`installer/`](installer/README.md):
+Automated installers for Ubuntu 22.04/24.04 and Debian 11/12/13 live in [`installer/`](installer/README.md):
 
 ```bash
 git clone <your-repo-url> /tmp/tdh

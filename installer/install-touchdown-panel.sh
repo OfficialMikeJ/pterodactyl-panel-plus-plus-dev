@@ -11,7 +11,7 @@ set -euo pipefail
 #  Modeled on the pterodactyl-installer / pyrodactyl-installer projects:   #
 #  https://github.com/Muspelheim-Hosting/pyrodactyl-installer              #
 #                                                                           #
-#  Supported: Ubuntu 22.04 / 24.04, Debian 11 / 12                          #
+#  Supported: Ubuntu 22.04 / 24.04, Debian 11 / 12 / 13                     #
 #  Run as root:  bash install-touchdown-panel.sh                            #
 #                                                                           #
 #  Unlike upstream installers that download a pre-built release tarball,    #
@@ -83,8 +83,8 @@ detect_os() {
 
   case "$OS_ID" in
     ubuntu) [[ "$VERSION_ID" =~ ^(22.04|24.04)$ ]] || { error "Unsupported Ubuntu version: $VERSION_ID"; exit 1; } ;;
-    debian) [[ "$OS_VERSION" =~ ^(11|12)$ ]] || { error "Unsupported Debian version: $VERSION_ID"; exit 1; } ;;
-    *) error "Unsupported OS: $OS_ID (Ubuntu 22.04/24.04 or Debian 11/12 required)"; exit 1 ;;
+    debian) [[ "$OS_VERSION" =~ ^(11|12|13)$ ]] || { error "Unsupported Debian version: $VERSION_ID"; exit 1; } ;;
+    *) error "Unsupported OS: $OS_ID (Ubuntu 22.04/24.04 or Debian 11/12/13 required)"; exit 1 ;;
   esac
   success "Detected $PRETTY_NAME"
 }
