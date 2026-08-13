@@ -254,6 +254,19 @@ prompt_config() {
   [[ "$confirm" =~ ^[Yy] ]] || exit 0
 }
 
+# Composer, artisan, systemd and cron must all use the exact PHP this
+# installer provisioned. The bare `php` command can resolve to a different
+# version on hosts that already had PHP installed for other projects
+# (e.g. Debian 13 defaults to PHP 8.4, which this panel does not support) —
+# composer then rejects the lock file and artisan runs under the wrong PHP.
+resolve_php_bin() {
+  PHP_BIN=""
+  for cand in "/usr/bin/php${PHP_VERSION}" "$(command -v "php${PHP_VERSION}" 2>/dev/null)" "$(command -v php 2>/dev/null)"; do
+    [ -n "$cand" ] && [ -x "$cand" ] && { PHP_BIN="$cand"; break; }
+  done
+  [ -n "$PHP_BIN" ] || { error "No usable PHP binary found."; exit 1; }
+}
+
 # A port is only a problem if something OTHER than the host's own mariadbd
 # holds it — mariadbd holding it just means a previous run of this installer.
 db_port_busy_by_other() {
@@ -313,8 +326,9 @@ install_dependencies() {
 
   npm install -g yarn >/dev/null 2>&1 || true
 
-  # Composer 2
-  curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+  # Composer 2 — bootstrapped with the pinned PHP, never the system `php`.
+  resolve_php_bin
+  curl -sS https://getcomposer.org/installer | "$PHP_BIN" -- --install-dir=/usr/local/bin --filename=composer
 
   systemctl enable --now mariadb redis-server nginx cron
 
@@ -361,7 +375,7 @@ install_panel() {
   cp -n .env.example .env
 
   log "Installing PHP dependencies (composer)..."
-  COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --quiet
+  COMPOSER_ALLOW_SUPERUSER=1 "$PHP_BIN" /usr/local/bin/composer install --no-dev --optimize-autoloader --no-interaction --quiet
 
   log "Building frontend assets (this fork is source-only — building on the server)..."
   yarn install --frozen-lockfile --silent
@@ -373,7 +387,7 @@ configure_panel() {
   cd "$PANEL_DIR"
   log "Configuring environment..."
 
-  php artisan key:generate --force
+  "$PHP_BIN" artisan key:generate --force
 
   # Hard-verify the encryption key actually landed in .env — everything
   # downstream (sessions, encrypted billing keys, SMB credentials) depends on
@@ -389,7 +403,7 @@ configure_panel() {
   # whenever APP_URL starts with https, and a Secure cookie is never sent over
   # plain HTTP — every request then gets a fresh session and login fails with
   # "CSRF token mismatch."
-  php artisan p:environment:setup \
+  "$PHP_BIN" artisan p:environment:setup \
     --author="$ADMIN_EMAIL" \
     --url="${APP_SCHEME}://${FQDN}" \
     --timezone="$TIMEZONE" \
@@ -402,7 +416,7 @@ configure_panel() {
     --settings-ui=true \
     --no-interaction
 
-  php artisan p:environment:database \
+  "$PHP_BIN" artisan p:environment:database \
     --host="127.0.0.1" \
     --port="$DB_PORT" \
     --database="$DB_NAME" \
@@ -423,10 +437,10 @@ configure_panel() {
   [ "$CHANNEL" = "dev" ] && set_env "DEV_FEATURES_USERS" "$DEV_FEATURES_USERS"
 
   log "Running database migrations (includes the Touch Down trophy system)..."
-  php artisan migrate --seed --force
+  "$PHP_BIN" artisan migrate --seed --force
 
   log "Creating admin user..."
-  php artisan p:user:make \
+  "$PHP_BIN" artisan p:user:make \
     --email="$ADMIN_EMAIL" \
     --username="$ADMIN_USERNAME" \
     --name-first="$ADMIN_FIRST" \
@@ -467,11 +481,7 @@ setup_services() {
 
   # systemd and cron need an absolute path to PHP; a path that does not exist
   # fails with 203/EXEC and the unit never starts.
-  PHP_BIN=""
-  for cand in "/usr/bin/php${PHP_VERSION}" "$(command -v "php${PHP_VERSION}" 2>/dev/null)" "$(command -v php 2>/dev/null)"; do
-    [ -n "$cand" ] && [ -x "$cand" ] && { PHP_BIN="$cand"; break; }
-  done
-  [ -n "$PHP_BIN" ] || { error "No usable PHP binary found."; exit 1; }
+  resolve_php_bin
 
   # Never sort a crontab — environment assignments (PATH, MAILTO) are positional.
   { crontab -u www-data -l 2>/dev/null | grep -v 'artisan schedule:run'
