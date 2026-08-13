@@ -22,6 +22,14 @@ repository and builds the frontend assets on the server with Node.js 22 + Yarn.
 
 ## Fresh install
 
+The installer's first prompt asks what this machine should run: **Panel**,
+**Wings** (the game-node daemon, unmodified upstream), or **both** on one
+host. For a Wings-only node it installs Docker (existing Docker installs are
+left untouched), the Wings binary and its systemd service, then prints the
+panel-side steps — create the node (LAN nodes: FQDN = the machine's IP, SSL
+off), run the node's auto-deploy command, `systemctl start wings`.
+Pre-select with `INSTALL_TARGET=panel|wings|both`.
+
 On a fresh server, as root:
 
 ```bash
