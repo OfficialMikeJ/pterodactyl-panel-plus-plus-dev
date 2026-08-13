@@ -76,7 +76,7 @@ What it sets up:
 | Component | Details |
 | --- | --- |
 | PHP 8.3 + extensions | fpm, cli, gd, mysql, mbstring, bcmath, xml, curl, zip, intl |
-| MariaDB | `panel` database + dedicated user with random password |
+| MariaDB | `panel` database + dedicated user with random password. Uses port 3306, but if something else already holds it (e.g. a Docker container publishing 3306) the installer automatically runs MariaDB on the next free port and points the panel at it — the final summary shows which port was used. Override with `DB_PORT=` if you want a specific one. |
 | Redis | cache / sessions / queue |
 | Node.js 22 + Yarn | builds the panel frontend (`yarn build:production`) |
 | nginx | site config for your FQDN, optional Let's Encrypt via certbot |
