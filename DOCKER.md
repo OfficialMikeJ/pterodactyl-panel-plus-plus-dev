@@ -14,6 +14,10 @@ Because this fork is source-only, the panel image is **built from your clone**
 
 ## Prerequisites
 
+Any Linux host Docker supports works — including Ubuntu 22.04/24.04 and
+Debian 11/12/13. The panel's PHP 8.3 runtime is baked into the image, so the
+host OS's own PHP version (e.g. Debian 13's PHP 8.4) doesn't matter here.
+
 Docker Engine + the compose plugin on the host:
 
 ```bash
