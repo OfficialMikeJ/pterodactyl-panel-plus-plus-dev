@@ -15,15 +15,18 @@ trap 'rc=$?; echo "[ERROR ] Update failed at line ${LINENO}: ${BASH_COMMAND} (ex
 #                                                                           #
 #  The panel directory and branch are auto-detected, so a dev-channel       #
 #  install is never silently switched to the public branch. Maintenance     #
-#  mode is always lifted, even if the update fails part-way.                #
+#  mode is always lifted, even if the update fails part-way. If Wings is    #
+#  installed on this host it is updated too (skip with --skip-wings).       #
 #############################################################################
 
 ALLOW_SEED="no"
+SKIP_WINGS="no"
 while [ $# -gt 0 ]; do
   case "$1" in
     --seed) ALLOW_SEED="yes" ;;
-    -h|--help) sed -n '4,16p' "$0"; exit 0 ;;
-    *) echo "Unknown argument: $1 (valid: --seed)" >&2; exit 2 ;;
+    --skip-wings) SKIP_WINGS="yes" ;;
+    -h|--help) sed -n '4,17p' "$0"; exit 0 ;;
+    *) echo "Unknown argument: $1 (valid: --seed, --skip-wings)" >&2; exit 2 ;;
   esac
   shift
 done
@@ -149,5 +152,31 @@ find "$PANEL_DIR/installer" -name '*.sh' -exec chmod 755 {} + 2>/dev/null || tru
 echo "[Touch Down] Restarting queue worker..."
 $PHP artisan queue:restart >/dev/null 2>&1 || true
 systemctl restart pteroq.service 2>/dev/null || true
+
+# ── Wings: update it too when this host is also a game node ────────────────
+# The binary is swapped atomically and the daemon restarted only if it was
+# running; game servers are containers and keep running through a Wings
+# restart. Skip with --skip-wings.
+if [ "$SKIP_WINGS" = "no" ] && [ -x /usr/local/bin/wings ]; then
+  echo "[Touch Down] Updating Wings..."
+  case "$(uname -m)" in
+    x86_64)  WINGS_ARCH="amd64" ;;
+    aarch64) WINGS_ARCH="arm64" ;;
+    *) WINGS_ARCH="" ;;
+  esac
+  if [ -n "$WINGS_ARCH" ] \
+    && curl -sSL -o /tmp/wings.update "https://github.com/pterodactyl/wings/releases/latest/download/wings_linux_${WINGS_ARCH}" \
+    && [ -s /tmp/wings.update ]; then
+    install -m 755 /tmp/wings.update /usr/local/bin/wings
+    rm -f /tmp/wings.update
+    if systemctl is-active wings >/dev/null 2>&1; then
+      systemctl restart wings
+    fi
+    echo "[Touch Down] Wings updated: $(/usr/local/bin/wings version 2>/dev/null | head -n1 || echo 'version check unavailable')"
+  else
+    rm -f /tmp/wings.update
+    echo "[Touch Down] Wings download failed — the existing Wings binary was kept." >&2
+  fi
+fi
 
 echo "[Touch Down] Update complete — build ${BUILD_HASH} on ${GIT_BRANCH}."
