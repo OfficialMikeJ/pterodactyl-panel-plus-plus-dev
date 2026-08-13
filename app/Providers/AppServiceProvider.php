@@ -36,6 +36,15 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Touch Down Hosting: generated URLs must always carry the panel's
+        // canonical root (APP_URL). On multi-service hosts the panel often
+        // lives on a non-default port, and a link rendered without it lands
+        // on whatever answers port 80 (e.g. OpenMediaVault's web UI). The
+        // installer writes APP_URL with the correct scheme, host and port.
+        if (!empty(config('app.url'))) {
+            URL::forceRootUrl(config('app.url'));
+        }
+
         Relation::enforceMorphMap([
             'allocation' => Models\Allocation::class,
             'api_key' => Models\ApiKey::class,
