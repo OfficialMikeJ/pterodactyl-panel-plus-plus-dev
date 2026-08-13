@@ -1,5 +1,8 @@
 #!/bin/bash
-set -euo pipefail
+set -Eeuo pipefail
+
+# Name the failing line/command instead of dying silently under set -e.
+trap 'rc=$?; echo "[ERROR ] Update failed at line ${LINENO}: ${BASH_COMMAND} (exit ${rc})" >&2' ERR
 
 #############################################################################
 #  Touch Down Hosting Panel Updater                                         #
