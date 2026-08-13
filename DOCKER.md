@@ -10,7 +10,7 @@ Because this fork is source-only, the panel image is **built from your clone**
 | Build | Branch | Clone from |
 | --- | --- | --- |
 | Public | `main` | your GitHub repository |
-| Dev (internal) | `dev` | your Gitea repository |
+| Dev (internal) | `dev` | https://github.com/OfficialMikeJ/pterodactyl-panel-plus-plus-dev |
 
 ## Prerequisites
 

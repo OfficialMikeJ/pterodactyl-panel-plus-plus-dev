@@ -6,7 +6,7 @@ set -euo pipefail
 #  Touch Down Hosting Panel Installer                                       #
 #                                                                           #
 #  Installs the Touch Down Hosting panel (a Pterodactyl 1.14.1 fork) from  #
-#  a git repository (e.g. your Gitea instance) onto a fresh server.        #
+#  its GitHub repository onto a fresh server.                              #
 #                                                                           #
 #  Modeled on the pterodactyl-installer / pyrodactyl-installer projects:   #
 #  https://github.com/Muspelheim-Hosting/pyrodactyl-installer              #
@@ -24,9 +24,9 @@ set -euo pipefail
 #############################################################################
 
 # ── Configuration (override via environment or answer the prompts) ────────
-GIT_REPO="${GIT_REPO:-}"                      # e.g. https://gitea.example.com/YourUser/touch-down-hosting-panel.git
+GIT_REPO="${GIT_REPO:-https://github.com/OfficialMikeJ/pterodactyl-panel-plus-plus-dev.git}"
 GIT_USERNAME="${GIT_USERNAME:-}"              # only needed for a PRIVATE repository
-GIT_TOKEN="${GIT_TOKEN:-}"                    # Gitea ACCESS TOKEN (read:repository) — never an account password
+GIT_TOKEN="${GIT_TOKEN:-}"                    # git ACCESS TOKEN (repo read) — never an account password
 CHANNEL="${CHANNEL:-}"                        # public (main branch, Alpha) | dev (dev branch, internal build)
 GIT_BRANCH="${GIT_BRANCH:-}"                  # derived from CHANNEL unless set explicitly
 AUTO_UPDATE="${AUTO_UPDATE:-}"                # yes/no — default: no (opt-in; both builds update manually)
@@ -160,13 +160,13 @@ prompt_repo_credentials() {
   if [ -z "$GIT_TOKEN" ]; then
     echo
     log "That repository is not readable anonymously — it looks private."
-    echo "  In Gitea: Settings -> Applications -> Generate New Token"
-    echo "  Scope: read:repository (read-only is enough for a panel install)"
+    echo "  On GitHub: Settings -> Developer settings -> Personal access tokens"
+    echo "  Scope: repository read access is enough for a panel install"
     echo "  Use an ACCESS TOKEN, not your account password — it is stored on this"
     echo "  server and reused unattended by the update script."
     echo
-    [ -z "$GIT_USERNAME" ] && read -rp "Gitea username: " GIT_USERNAME
-    read -rsp "Gitea access token: " GIT_TOKEN; echo
+    [ -z "$GIT_USERNAME" ] && read -rp "Git username: " GIT_USERNAME
+    read -rsp "Git access token: " GIT_TOKEN; echo
   fi
 
   setup_git_credentials
@@ -179,7 +179,8 @@ prompt_repo_credentials() {
 }
 
 prompt_config() {
-  [ -z "$GIT_REPO" ] && read -rp "Git repository URL of your panel (Gitea): " GIT_REPO
+  read -rp "Git repository URL of your panel [${GIT_REPO}]: " repo_answer
+  [ -n "$repo_answer" ] && GIT_REPO="$repo_answer"
   prompt_repo_credentials
 
   if [ -z "$CHANNEL" ]; then

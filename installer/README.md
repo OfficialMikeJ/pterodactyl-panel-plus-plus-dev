@@ -6,9 +6,8 @@ Automated install/update scripts for the Touch Down Hosting panel (Pterodactyl
 [pterodactyl-installer](https://pterodactyl-installer.se) projects.
 
 The key difference from those installers: this repository is **source-only**
-(no pre-built `panel.tar.gz` releases), so the installer clones your git
-repository (e.g. your Gitea instance) and builds the frontend assets on the
-server with Node.js 22 + Yarn.
+(no pre-built `panel.tar.gz` releases), so the installer clones the GitHub
+repository and builds the frontend assets on the server with Node.js 22 + Yarn.
 
 ## Supported systems
 
@@ -27,7 +26,7 @@ On a fresh server, as root:
 
 ```bash
 apt-get update && apt-get install -y git
-git clone https://YOUR-GITEA-HOST/YourUser/touch-down-hosting-panel.git /tmp/tdh
+git clone https://github.com/OfficialMikeJ/pterodactyl-panel-plus-plus-dev.git /tmp/tdh
 bash /tmp/tdh/installer/install-touchdown-panel.sh
 ```
 
@@ -35,9 +34,7 @@ The script prompts for everything it needs (repo URL, panel domain, admin
 credentials). You can also pre-answer via environment variables:
 
 ```bash
-GIT_REPO="https://YOUR-GITEA-HOST/YourUser/touch-down-hosting-panel.git" \
-GIT_USERNAME="YourGiteaUser" \
-GIT_TOKEN="gitea-access-token" \
+GIT_REPO="https://github.com/OfficialMikeJ/pterodactyl-panel-plus-plus-dev.git" \
 FQDN="panel.example.com" \
 ADMIN_EMAIL="you@example.com" \
 ADMIN_PASSWORD="********" \
@@ -47,12 +44,14 @@ bash /tmp/tdh/installer/install-touchdown-panel.sh
 
 ### Private repositories
 
-If the repository cannot be read anonymously, the installer says so and prompts
-for a **Gitea access token**:
+The GitHub repository above is public, so no credentials are needed. If you
+ever point `GIT_REPO` at a private repository instead, the installer says so
+and prompts for a **git access token** (pass it via `GIT_USERNAME`/`GIT_TOKEN`
+to skip the prompt):
 
 ```
-In Gitea: Settings → Applications → Generate New Token
-Scope: read:repository   (read-only is enough for a panel install)
+On GitHub: Settings → Developer settings → Personal access tokens
+Scope: repository read access   (read-only is enough for a panel install)
 ```
 
 Use an **access token, never your account password** — it is stored on the
@@ -69,8 +68,8 @@ automatically, and the repair script verifies the remote is reachable.
 > Never hardcode credentials into these scripts. They live inside the
 > repository, so anything written here is published to everyone with repo
 > access — permanently, since git history retains it even after deletion.
-> An admin password would also hand over every repo and the Gitea instance
-> itself; a scoped read-only token cannot.
+> An account password would also hand over every repo on the account;
+> a scoped read-only token cannot.
 
 What it sets up:
 
