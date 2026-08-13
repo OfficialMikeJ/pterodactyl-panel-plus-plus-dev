@@ -26,4 +26,10 @@ if [ ! -f artisan ]; then
   exit 1
 fi
 
-exec php artisan tdh:reset-master-password
+# Use the panel's pinned PHP — on hosts carrying another PHP for other
+# projects, plain `php` can resolve to a version the panel doesn't support.
+for cand in /usr/bin/php8.3 /usr/bin/php8.2 php; do
+  command -v "$cand" >/dev/null 2>&1 && exec "$cand" artisan tdh:reset-master-password
+done
+echo "[ERROR] No usable PHP found." >&2
+exit 1
