@@ -16,9 +16,9 @@ set -euo pipefail
 #  deliberately OUTSIDE the panel directory — so the repository, the web    #
 #  root, `git remote -v` and .env never contain them.                       #
 #                                                                           #
-#  A Gitea ACCESS TOKEN (Settings -> Applications -> Generate New Token,    #
-#  scope read:repository) is recommended over an account password: it is    #
+#  A git ACCESS TOKEN is recommended over an account password: it is        #
 #  read-only, revocable on its own, and works when 2FA is enabled.          #
+#  GitHub: Settings -> Developer settings -> Personal access tokens.        #
 #############################################################################
 
 ORANGE='\033[38;5;208m'; GREEN='\033[0;32m'; RED='\033[0;31m'; RESET='\033[0m'

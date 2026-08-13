@@ -888,7 +888,7 @@ else
   detail "For a private repository, store a read-only token for root:"
   detail "  printf 'https://USER:TOKEN@$(printf '%s' "${GIT_REMOTE#*://}" | cut -d/ -f1)\\n' > /root/.git-credentials"
   detail "  chmod 600 /root/.git-credentials && git config --global credential.helper store"
-  detail "Use a Gitea access token (read:repository), never an account password."
+  detail "Use a git access token with repo read access, never an account password."
 fi
 if [ -f /root/.git-credentials ] && [ "$(stat -c '%a' /root/.git-credentials 2>/dev/null)" != "600" ]; then
   note_issue
