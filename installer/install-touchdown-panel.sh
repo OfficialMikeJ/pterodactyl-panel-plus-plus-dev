@@ -257,11 +257,14 @@ install_dependencies() {
   log "Installing system dependencies..."
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
-  apt-get install -y -qq software-properties-common curl ca-certificates gnupg apt-transport-https \
+  apt-get install -y -qq curl ca-certificates gnupg apt-transport-https \
     lsb-release git tar unzip cron
 
   # PHP repository (Ondrej PPA on Ubuntu, Sury on Debian)
   if [ "$OS_ID" = "ubuntu" ]; then
+    # software-properties-common provides add-apt-repository. Ubuntu-only:
+    # Debian 13 removed the package, and the Debian path below doesn't need it.
+    apt-get install -y -qq software-properties-common
     LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
   else
     curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
