@@ -79,7 +79,7 @@ What it sets up:
 | MariaDB | `panel` database + dedicated user with random password. Uses port 3306, but if something else already holds it (e.g. a Docker container publishing 3306) the installer automatically runs MariaDB on the next free port and points the panel at it — the final summary shows which port was used. Override with `DB_PORT=` if you want a specific one. |
 | Redis | cache / sessions / queue |
 | Node.js 22 + Yarn | builds the panel frontend (`yarn build:production`) |
-| nginx | site config for your FQDN, optional Let's Encrypt via certbot |
+| nginx | site config for your FQDN, optional Let's Encrypt via certbot. Listens on port 80 by default; if another web UI already owns 80 (e.g. OpenMediaVault's admin page on a NAS host) the installer prompts for a free port instead and bakes it into the panel URL — point your reverse proxy at that port. Override with `PANEL_PORT=`. |
 | systemd | `pteroq.service` queue worker |
 | cron | Laravel scheduler for `www-data` |
 | Panel | migrations (incl. trophy system), admin user, `APP_NAME` branding |
