@@ -37,6 +37,9 @@ if [ -z "$REPO_URL" ]; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
   PANEL_DIR="$(dirname "$SCRIPT_DIR")"
   if [ -d "${PANEL_DIR}/.git" ]; then
+    # www-data owns the tree; without safe.directory git refuses it for root.
+    git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$PANEL_DIR" \
+      || git config --global --add safe.directory "$PANEL_DIR"
     REPO_URL="$(git -C "$PANEL_DIR" remote get-url origin 2>/dev/null || true)"
   fi
 fi

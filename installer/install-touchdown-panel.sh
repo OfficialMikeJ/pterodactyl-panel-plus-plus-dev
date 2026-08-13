@@ -394,6 +394,10 @@ SQL
 install_panel() {
   log "Cloning Touch Down Hosting panel from ${GIT_REPO}..."
   mkdir -p "$PANEL_DIR"
+  # A previous run chowns the tree to www-data; git run as root then refuses
+  # it (dubious ownership) unless the directory is registered as safe.
+  git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$PANEL_DIR" \
+    || git config --global --add safe.directory "$PANEL_DIR"
   if [ -d "${PANEL_DIR}/.git" ]; then
     git -C "$PANEL_DIR" fetch origin && git -C "$PANEL_DIR" checkout "$GIT_BRANCH" && git -C "$PANEL_DIR" pull
   else
