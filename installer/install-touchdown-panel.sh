@@ -43,6 +43,7 @@ CONFIGURE_SSL="${CONFIGURE_SSL:-yes}"         # yes = Let's Encrypt via certbot
 DB_NAME="${DB_NAME:-panel}"
 DB_USER="${DB_USER:-touchdown}"
 DB_PASSWORD="${DB_PASSWORD:-$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c 32)}"
+DB_PORT="${DB_PORT:-3306}"                    # auto-bumps to the next free port if taken (e.g. by a Docker container)
 PHP_VERSION="8.3"
 
 # ── UI helpers ─────────────────────────────────────────────────────────────
@@ -253,10 +254,37 @@ prompt_config() {
   [[ "$confirm" =~ ^[Yy] ]] || exit 0
 }
 
+# A port is only a problem if something OTHER than the host's own mariadbd
+# holds it — mariadbd holding it just means a previous run of this installer.
+db_port_busy_by_other() {
+  local line
+  line="$(ss -ltnpH "sport = :$1" 2>/dev/null || true)"
+  [ -n "$line" ] && ! printf '%s' "$line" | grep -q 'mariadbd'
+}
+
 # ── Dependencies ───────────────────────────────────────────────────────────
 install_dependencies() {
   log "Installing system dependencies..."
   export DEBIAN_FRONTEND=noninteractive
+
+  # If another service (commonly a Docker container publishing 3306) already
+  # holds the MariaDB port, run the panel's MariaDB on the next free port.
+  # The override must exist BEFORE apt configures mariadb-server, so the
+  # service binds the right port on its very first start.
+  while db_port_busy_by_other "$DB_PORT"; do
+    DB_PORT=$((DB_PORT + 1))
+  done
+  if [ "$DB_PORT" != "3306" ]; then
+    log "Port 3306 is in use by another service — the panel's MariaDB will use port ${DB_PORT}"
+    mkdir -p /etc/mysql/mariadb.conf.d
+    printf '[mysqld]\nport = %s\n' "$DB_PORT" > /etc/mysql/mariadb.conf.d/99-touchdown-port.cnf
+  fi
+
+  # Finish anything a previously interrupted run left half-configured (e.g.
+  # mariadb-server after a port clash) — with the port override in place,
+  # its deferred service start can now succeed.
+  dpkg --configure -a || true
+
   apt-get update -qq
   apt-get install -y -qq curl ca-certificates gnupg apt-transport-https \
     lsb-release git tar unzip cron
@@ -289,7 +317,12 @@ install_dependencies() {
   curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
   systemctl enable --now mariadb redis-server nginx cron
-  success "Dependencies installed (PHP ${PHP_VERSION}, Node $(node -v), MariaDB, Redis, nginx)"
+
+  # A MariaDB that was already running keeps its old port until restarted.
+  if ! ss -ltnH "sport = :$DB_PORT" 2>/dev/null | grep -q .; then
+    systemctl restart mariadb
+  fi
+  success "Dependencies installed (PHP ${PHP_VERSION}, Node $(node -v), MariaDB on port ${DB_PORT}, Redis, nginx)"
 }
 
 # ── Database ───────────────────────────────────────────────────────────────
@@ -371,7 +404,7 @@ configure_panel() {
 
   php artisan p:environment:database \
     --host="127.0.0.1" \
-    --port="3306" \
+    --port="$DB_PORT" \
     --database="$DB_NAME" \
     --username="$DB_USER" \
     --password="$DB_PASSWORD" \
@@ -570,7 +603,7 @@ summary() {
   echo -e "  Build channel:  ${WHITE}${CHANNEL} (${GIT_BRANCH} branch, auto-update: ${AUTO_UPDATE})${RESET}"
   echo -e "  Admin login:    ${WHITE}${ADMIN_USERNAME} / ${ADMIN_EMAIL}${RESET}"
   echo -e "  Install path:   ${WHITE}${PANEL_DIR}${RESET}"
-  echo -e "  DB credentials: ${WHITE}${DB_USER} / ${DB_PASSWORD}${RESET}  (database: ${DB_NAME})"
+  echo -e "  DB credentials: ${WHITE}${DB_USER} / ${DB_PASSWORD}${RESET}  (database: ${DB_NAME}, host: 127.0.0.1:${DB_PORT})"
   echo
   echo -e "  Next steps:"
   echo -e "   1. Log in and check the pulsating-logo login flow + Cool Orange theme."
