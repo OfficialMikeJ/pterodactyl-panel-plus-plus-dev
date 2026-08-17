@@ -21,12 +21,14 @@ trap 'rc=$?; echo "[ERROR ] Update failed at line ${LINENO}: ${BASH_COMMAND} (ex
 
 ALLOW_SEED="no"
 SKIP_WINGS="no"
+INSTALL_WINGS="no"
 while [ $# -gt 0 ]; do
   case "$1" in
     --seed) ALLOW_SEED="yes" ;;
     --skip-wings) SKIP_WINGS="yes" ;;
+    --install-wings) INSTALL_WINGS="yes" ;;
     -h|--help) sed -n '4,17p' "$0"; exit 0 ;;
-    *) echo "Unknown argument: $1 (valid: --seed, --skip-wings)" >&2; exit 2 ;;
+    *) echo "Unknown argument: $1 (valid: --seed, --skip-wings, --install-wings)" >&2; exit 2 ;;
   esac
   shift
 done
@@ -157,7 +159,37 @@ systemctl restart pteroq.service 2>/dev/null || true
 # The binary is swapped atomically and the daemon restarted only if it was
 # running; game servers are containers and keep running through a Wings
 # restart. Skip with --skip-wings.
-if [ "$SKIP_WINGS" = "no" ] && [ -x /usr/local/bin/wings ]; then
+# --install-wings: first-time Wings setup on a host that doesn't have it —
+# config dir + systemd unit here, the shared download below fetches the binary.
+if [ "$INSTALL_WINGS" = "yes" ] && [ ! -f /etc/systemd/system/wings.service ]; then
+  echo "[Touch Down] Installing Wings (first time on this host)..."
+  mkdir -p /etc/pterodactyl
+  cat > /etc/systemd/system/wings.service <<'EOF'
+[Unit]
+Description=Pterodactyl Wings Daemon
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+User=root
+WorkingDirectory=/etc/pterodactyl
+LimitNOFILE=4096
+PIDFile=/var/run/wings/daemon.pid
+ExecStart=/usr/local/bin/wings
+Restart=on-failure
+StartLimitInterval=180
+StartLimitBurst=30
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable wings >/dev/null 2>&1 || true
+fi
+
+if [ "$SKIP_WINGS" = "no" ] && { [ -x /usr/local/bin/wings ] || [ "$INSTALL_WINGS" = "yes" ]; }; then
   echo "[Touch Down] Updating Wings..."
   case "$(uname -m)" in
     x86_64)  WINGS_ARCH="amd64" ;;
