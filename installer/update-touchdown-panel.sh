@@ -163,6 +163,13 @@ systemctl restart pteroq.service 2>/dev/null || true
 # config dir + systemd unit here, the shared download below fetches the binary.
 if [ "$INSTALL_WINGS" = "yes" ] && [ ! -f /etc/systemd/system/wings.service ]; then
   echo "[Touch Down] Installing Wings (first time on this host)..."
+  # Wings needs Docker to run game servers. An existing Docker install is
+  # left completely alone.
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "[Touch Down] Installing Docker via get.docker.com..."
+    curl -fsSL https://get.docker.com | sh
+  fi
+  systemctl enable --now docker
   mkdir -p /etc/pterodactyl
   cat > /etc/systemd/system/wings.service <<'EOF'
 [Unit]
